@@ -1,0 +1,112 @@
+name: osiris_browser
+description: Osiris Browser - Anonymous cross-platform browser with AES-256 encryption
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+  flutter: ">=3.13.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Web view
+  flutter_inappwebview: ^6.0.0
+
+  # Database
+  sqflite: ^2.3.0
+  path_provider: ^2.1.1
+  path: ^1.8.3
+
+  # Security & Encryption
+  flutter_secure_storage: ^9.0.0
+  encrypt: ^5.0.3
+  cryptography: ^2.7.0
+  pointycastle: ^3.7.3
+
+  # State Management
+  flutter_bloc: ^8.1.3
+  equatable: ^2.0.5
+  provider: ^6.1.1
+
+  # Navigation
+  go_router: ^13.0.0
+
+  # Authentication
+  local_auth: ^2.1.6
+
+  # Permissions
+  permission_handler: ^11.0.0
+
+  # Storage
+  shared_preferences: ^2.2.2
+
+  # Network
+  connectivity_plus: ^5.0.0
+
+  # Device Info
+  device_info_plus: ^9.0.0
+  package_info_plus: ^5.0.0
+  safe_device: ^1.1.0
+
+  # UI
+  lottie: ^2.7.0
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.0
+  shimmer: ^3.0.0
+
+  # Utils
+  uuid: ^4.2.1
+  intl: ^0.19.0
+  rxdart: ^0.27.7
+  url_launcher: ^6.2.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.7
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  image_path: "assets/icons/osiris_logo.png"
+  android: true
+  remove_alpha_ios: true
+  background_color: "#000000"
+  ios:
+    generate: true
+    image_path: "assets/icons/osiris_logo_black_bg.png"
+  macos:
+    generate: true
+    image_path: "assets/icons/osiris_logo.png"
+  windows:
+    generate: true
+    image_path: "assets/icons/osiris_logo.png"
+    icon_size: 48
+  linux:
+    generate: true
+    image_path: "assets/icons/osiris_logo.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/icons/osiris_logo.png"
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/animations/
+    - assets/icons/
+
+  # Uncomment and add font files to assets/fonts/ to use Inter font:
+  # fonts:
+  #   - family: Inter
+  #     fonts:
+  #       - asset: assets/fonts/Inter-Regular.ttf
+  #       - asset: assets/fonts/Inter-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Inter-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/Inter-Bold.ttf
+  #         weight: 700

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- ─── App Identity ─────────────────────────────────────────────── -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>Osiris Browser</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>osiris_browser</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
+
+    <!-- ─── URL Schemes ───────────────────────────────────────────────── -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>osiris</string>
+            </array>
+        </dict>
+    </array>
+
+    <!-- ─── Privacy Descriptions ─────────────────────────────────────── -->
+    <key>NSCameraUsageDescription</key>
+    <string>Osiris Browser may use the camera for web pages that request camera access.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Osiris Browser may use the microphone for web pages that request audio access.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Osiris Browser may access your photo library for file uploads on websites.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Osiris Browser may save images to your photo library when downloading from websites.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Use Face ID to quickly unlock Osiris Browser.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Some websites may request location access. Osiris never stores your location.</string>
+    <key>NSContactsUsageDescription</key>
+    <string>Some websites may request access to contacts.</string>
+
+    <!-- ─── App Transport Security ────────────────────────────────────── -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- Block all cleartext HTTP by default -->
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+        <!-- Allow web content (WebView loads HTTP sites) -->
+        <key>NSAllowsArbitraryLoadsInWebContent</key>
+        <true/>
+        <!-- Allow local network for development -->
+        <key>NSAllowsLocalNetworking</key>
+        <false/>
+    </dict>
+
+    <!-- ─── Orientation Support ───────────────────────────────────────── -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- ─── UI Settings ───────────────────────────────────────────────── -->
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+    <key>UIStatusBarStyle</key>
+    <string>UIStatusBarStyleLightContent</string>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <false/>
+
+    <!-- ─── Flutter ───────────────────────────────────────────────────── -->
+    <key>CADisableMinimumFrameDurationOnPhone</key>
+    <true/>
+    <key>UIApplicationSupportsIndirectInputEvents</key>
+    <true/>
+
+    <!-- ─── Privacy Flags ─────────────────────────────────────────────── -->
+    <!-- Prevent screenshots in app switcher -->
+    <key>UIScreenEdgeDeferringSystemGestures</key>
+    <array/>
+
+    <!-- Disable iCloud backup of sensitive data -->
+    <key>UIFileSharingEnabled</key>
+    <false/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <false/>
+
+    <!-- Disable Siri integration (privacy) -->
+    <key>NSUserActivityTypes</key>
+    <array/>
+
+    <!-- Background modes - minimal for privacy -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+    </array>
+</dict>
+</plist>

@@ -1,0 +1,19 @@
+Diagnostics:
+  # Suppress all false-positive IDE errors caused by missing platform SDKs:
+  # - Windows runner files require Windows SDK (only available on Windows)
+  # - Flutter headers require Flutter SDK in include path
+  # All these files compile correctly in their target build environment.
+  Suppress:
+    - pp_file_not_found
+    - invalid_token_after_toplevel_declarator
+    - undeclared_var_use
+    - undeclared_var_use_suggest
+    - unknown_typename
+    - no_member
+    - expected_expression
+    - expected_fn_body
+    - expected_semi_decl_list
+    - expected_class_name
+    - typename_nested_not_found
+    - member_function_call_bad_type
+    - override_keyword_only_allowed_on_virtual_member_functions
