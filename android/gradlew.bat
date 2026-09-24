@@ -46,6 +46,16 @@ echo location of your Java installation.
 goto fail
 
 :init
+@rem Refuse wrapper JARs other than the official Gradle 8.5 JAR. Older wrappers
+@rem can ignore distributionSha256Sum and must not run unchecked.
+set EXPECTED_WRAPPER_JAR_SHA256=d3b261c2820e9e3d8d639ed084900f11f4a86050a8f83342ade7b6bc9b0d2bdd
+set WRAPPER_JAR_SHA256=
+for /f "tokens=*" %%H in ('certutil -hashfile "%APP_HOME%\gradle\wrapper\gradle-wrapper.jar" SHA256 ^| findstr /R /I "^[0-9A-F][0-9A-F]*$"') do set WRAPPER_JAR_SHA256=%%H
+if /I not "%WRAPPER_JAR_SHA256%"=="%EXPECTED_WRAPPER_JAR_SHA256%" (
+    echo ERROR: unverified Gradle wrapper JAR; expected the official Gradle 8.5 wrapper.
+    goto fail
+)
+
 @rem Get command-line arguments, handling Windowz variants
 
 if not "%OS%" == "Windows_NT" goto win9xME_args

@@ -58,12 +58,28 @@ android {
     }
 
 
+    def releaseSigningRequested = gradle.startParameter.taskNames.any {
+        it.toLowerCase().contains('release')
+    }
+    def signingEnv = [
+        keystore: System.getenv('ANDROID_KEYSTORE_PATH'),
+        alias: System.getenv('ANDROID_KEY_ALIAS'),
+        storePassword: System.getenv('ANDROID_STORE_PASSWORD'),
+        keyPassword: System.getenv('ANDROID_KEY_PASSWORD')
+    ]
+    if (releaseSigningRequested && signingEnv.values().any { !it }) {
+        throw new GradleException('Release signing requires ANDROID_KEYSTORE_PATH, ANDROID_KEY_ALIAS, ANDROID_STORE_PASSWORD and ANDROID_KEY_PASSWORD from the environment.')
+    }
+    if (releaseSigningRequested && !file(signingEnv.keystore).isFile()) {
+        throw new GradleException('ANDROID_KEYSTORE_PATH does not point to a readable keystore file.')
+    }
+
     signingConfigs {
         release {
-            keyAlias 'Osiris'
-            keyPassword 'Br1zent_Best'
-            storeFile file('/Users/brizent/VS_Projects/Osiris Browser/android/app/key.jks')
-            storePassword 'Br1zent_Best'
+            keyAlias System.getenv('ANDROID_KEY_ALIAS')
+            keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            storeFile signingEnv.keystore ? file(signingEnv.keystore) : file('missing-release-keystore')
+            storePassword System.getenv('ANDROID_STORE_PASSWORD')
         }
     }
     buildTypes {
