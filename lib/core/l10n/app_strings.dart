@@ -97,6 +97,9 @@ class AppStrings {
                                        : 'Allow JavaScript execution';
   String get cookiesDesc        => _ru ? 'Разрешить сохранение cookies'
                                        : 'Allow cookies to be saved';
+  String get cookiesUnavailable => _ru
+      ? 'На этой платформе нельзя надёжно отключить приём cookies'
+      : 'This platform cannot reliably disable cookie acceptance';
   String get historyDesc        => _ru ? 'Сохранять историю посещений'
                                        : 'Save browsing history';
   String get clearOnExitDesc    => _ru ? 'Удалять все данные при закрытии'
@@ -113,6 +116,9 @@ class AppStrings {
                                     : 'Encrypts DNS queries';
   String get thirdPartyCookiesDesc => _ru ? 'Предотвращает межсайтовое отслеживание'
                                           : 'Prevents cross-site tracking';
+  String get thirdPartyCookiesUnavailable => _ru
+      ? 'На этой платформе нет доступного ограничения сторонних cookies'
+      : 'Third-party cookie controls are unavailable on this platform';
   String get userAgentDesc   => _ru ? 'Выглядеть как другой браузер или устройство'
                                     : 'Appear as a different browser/device';
   String get autoResetDesc   => _ru ? 'Автоматически очищать данные сессии'
