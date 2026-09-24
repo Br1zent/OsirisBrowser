@@ -4,6 +4,8 @@ import '../../../domain/entities/privacy_settings.dart';
 import '../../../domain/repositories/privacy_settings_repository.dart';
 import '../../../domain/repositories/history_repository.dart';
 import '../../../domain/repositories/bookmark_repository.dart';
+import '../../../core/security/data_wipe_service.dart';
+import '../screens/browser/browser_session_controller.dart';
 
 part 'privacy_event.dart';
 part 'privacy_state.dart';
@@ -12,11 +14,13 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
   final PrivacySettingsRepository settingsRepository;
   final HistoryRepository historyRepository;
   final BookmarkRepository bookmarkRepository;
+  final DataWipeService dataWipeService;
 
   PrivacyBloc({
     required this.settingsRepository,
     required this.historyRepository,
     required this.bookmarkRepository,
+    required this.dataWipeService,
   }) : super(const PrivacyState()) {
     on<PrivacyLoadSettings>(_onLoadSettings);
     on<PrivacyUpdateSettings>(_onUpdateSettings);
@@ -24,6 +28,13 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
     on<PrivacyClearHistory>(_onClearHistory);
     on<PrivacyResetToDefaults>(_onResetToDefaults);
   }
+
+  Future<WipeReport> resetApp() => dataWipeService.wipe(
+        scope: WipeScope.reset,
+        clearBookmarks: true,
+        // Reset runs on the welcome route, where BrowserScreen is unmounted.
+        stopWebViews: () async {},
+      );
 
   Future<void> _onLoadSettings(
       PrivacyLoadSettings event, Emitter<PrivacyState> emit) async {
@@ -62,9 +73,13 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
       PrivacyNukeAllData event, Emitter<PrivacyState> emit) async {
     emit(state.copyWith(status: PrivacyStatus.nuking));
     try {
-      await historyRepository.clearAllHistory();
-      if (event.clearBookmarks) {
-        await bookmarkRepository.deleteAllBookmarks();
+      final report = await dataWipeService.wipe(
+        scope: WipeScope.nuke,
+        clearBookmarks: event.clearBookmarks,
+        stopWebViews: BrowserSessionController.instance.closeAll,
+      );
+      if (!report.succeeded) {
+        throw StateError('Wipe incomplete: ${report.failedComponents.join(', ')}');
       }
       emit(state.copyWith(
         status: PrivacyStatus.nuked,
@@ -76,7 +91,7 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
     } catch (e) {
       emit(state.copyWith(
         status: PrivacyStatus.error,
-        message: 'Failed to clear data',
+        message: 'Wipe incomplete. App remains locked; retry required.',
       ));
     }
   }

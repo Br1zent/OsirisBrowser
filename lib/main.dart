@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core/security/data_wipe_service.dart';
 import 'core/security/master_password_service.dart';
 import 'core/services/app_state_service.dart';
 import 'core/theme/app_theme.dart';
@@ -42,13 +43,9 @@ void main() async {
 
   MasterPasswordService.instance.initialize();
 
-  final results = await Future.wait([
-    AppDatabase.getInstance(),
-    SharedPreferences.getInstance(),
-  ]);
-
-  final db    = results[0] as AppDatabase;
-  final prefs = results[1] as SharedPreferences;
+  final prefs = await SharedPreferences.getInstance();
+  await DataWipeService.completePendingWipeBeforeUnlock(preferences: prefs);
+  final db = await AppDatabase.getInstance();
 
   final BookmarkRepository bookmarkRepo = BookmarkRepositoryImpl(db);
   final HistoryRepository  historyRepo  = HistoryRepositoryImpl(db);
@@ -56,11 +53,18 @@ void main() async {
       PrivacySettingsRepositoryImpl(prefs);
 
   final appState = AppStateService(prefs);
+  final dataWipeService = DataWipeService(
+    database: db,
+    history: historyRepo,
+    bookmarks: bookmarkRepo,
+    preferences: prefs,
+  );
 
   runApp(OsirisApp(
     bookmarkRepository: bookmarkRepo,
     historyRepository: historyRepo,
     privacySettingsRepository: privacyRepo,
+    dataWipeService: dataWipeService,
     appState: appState,
   ));
 }
@@ -69,6 +73,7 @@ class OsirisApp extends StatelessWidget {
   final BookmarkRepository bookmarkRepository;
   final HistoryRepository  historyRepository;
   final PrivacySettingsRepository privacySettingsRepository;
+  final DataWipeService dataWipeService;
   final AppStateService appState;
 
   const OsirisApp({
@@ -76,6 +81,7 @@ class OsirisApp extends StatelessWidget {
     required this.bookmarkRepository,
     required this.historyRepository,
     required this.privacySettingsRepository,
+    required this.dataWipeService,
     required this.appState,
   });
 
@@ -99,6 +105,7 @@ class OsirisApp extends StatelessWidget {
               settingsRepository: privacySettingsRepository,
               historyRepository: historyRepository,
               bookmarkRepository: bookmarkRepository,
+              dataWipeService: dataWipeService,
             ),
           ),
         ],

@@ -21,7 +21,7 @@ class PrivacyUpdateSettings extends PrivacyEvent {
 
 class PrivacyNukeAllData extends PrivacyEvent {
   final bool clearBookmarks;
-  const PrivacyNukeAllData({this.clearBookmarks = false});
+  const PrivacyNukeAllData({this.clearBookmarks = true});
 
   @override
   List<Object?> get props => [clearBookmarks];

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -231,6 +233,21 @@ class AppDatabase {
     if (db != null && db.isOpen) {
       await db.close();
       _db = null;
+    }
+  }
+
+  /// Closes SQLite before deleting its main file and sidecars.
+  Future<void> closeAndDeleteFiles() async {
+    await close();
+    await deleteFiles();
+  }
+
+  static Future<void> deleteFiles() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final path = p.join(dir.path, AppConstants.dbName);
+    for (final suffix in ['', '-wal', '-shm', '-journal']) {
+      final file = File('$path$suffix');
+      if (await file.exists()) await file.delete();
     }
   }
 }
