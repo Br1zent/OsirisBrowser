@@ -204,25 +204,14 @@ class AppDatabase {
   // ─── Encrypted helpers ─────────────────────────────────────────────────────
 
   Future<void> setEncryptedSetting(String key, String plainValue) async {
-    if (EncryptionService.instance.isInitialized) {
-      final encrypted = EncryptionService.instance.encrypt(plainValue);
-      await setSetting(key, encrypted);
-    } else {
-      await setSetting(key, plainValue);
-    }
+    final encrypted = EncryptionService.instance.encrypt(plainValue);
+    await setSetting(key, encrypted);
   }
 
   Future<String?> getDecryptedSetting(String key) async {
     final raw = await getSetting(key);
     if (raw == null) return null;
-    if (EncryptionService.instance.isInitialized) {
-      try {
-        return EncryptionService.instance.decrypt(raw);
-      } catch (_) {
-        return raw;
-      }
-    }
-    return raw;
+    return EncryptionService.instance.decrypt(raw);
   }
 
   /// Close the database connection
