@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/entities/browser_tab.dart';
+import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/browser/browser_bloc.dart';
 import '../../bloc/privacy/privacy_bloc.dart';
 import '../../widgets/glass_card.dart';
@@ -47,6 +48,7 @@ class _BrowserScreenState extends State<BrowserScreen>
   bool _showControls = true;
   bool _showingTabSwitcher = false;
   bool _showingMoreMenu = false;
+  bool _showPrivacyShield = false;
   double _lastScrollY = 0;
   Timer? _autoClearTimer;
   int _lastClearInterval = -2; // sentinel: not yet initialized
@@ -102,9 +104,22 @@ class _BrowserScreenState extends State<BrowserScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+    if (lifecycle == AppLifecycleState.inactive ||
+        lifecycle == AppLifecycleState.hidden ||
+        lifecycle == AppLifecycleState.paused ||
+        lifecycle == AppLifecycleState.detached) {
+      // Hide WebView contents before the OS captures an app-switcher snapshot.
+      if (mounted && !_showPrivacyShield) {
+        setState(() => _showPrivacyShield = true);
+      }
+    }
+
     if (lifecycle == AppLifecycleState.paused ||
         lifecycle == AppLifecycleState.detached) {
       if (!mounted) return;
+      context.read<AuthBloc>().add(const AuthLock());
+      context.read<BrowserBloc>().add(const BrowserHide());
+      context.go('/welcome');
       final settings = context.read<PrivacyBloc>().state.settings;
       if (settings.clearOnExit) _clearAllBrowserData();
     }
@@ -252,7 +267,16 @@ class _BrowserScreenState extends State<BrowserScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<PrivacyBloc, PrivacyState>(
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (previous, current) =>
+          previous.status != AuthStatus.authenticated &&
+          current.status == AuthStatus.authenticated,
+      listener: (context, _) {
+        if (_showPrivacyShield && mounted) {
+          setState(() => _showPrivacyShield = false);
+        }
+      },
+      child: BlocListener<PrivacyBloc, PrivacyState>(
       listenWhen: (prev, curr) =>
           prev.settings.autoClearInterval != curr.settings.autoClearInterval,
       listener: (context, _) => _restartAutoClearTimer(),
@@ -372,10 +396,15 @@ class _BrowserScreenState extends State<BrowserScreen>
               ),
               if (_showingMoreMenu)
                 _buildMoreMenuOverlay(state, display),
+              if (_showPrivacyShield)
+                const Positioned.fill(
+                  child: ColoredBox(color: AppColors.black),
+                ),
             ],
           ),
         );
       },
+      ),
       ),
     );
   }
