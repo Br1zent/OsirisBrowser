@@ -31,16 +31,24 @@ class MasterPasswordService {
         _storage.read(key: AppConstants.encryptionSaltKey),
         _storage.read(key: AppConstants.dbEncryptionKeyKey),
       ]);
-      if (values.every((value) => value == null)) {
-        return MasterPasswordConfiguration.notSet;
-      }
-      if (values.every((value) => value != null && value.isNotEmpty)) {
-        return MasterPasswordConfiguration.configured;
-      }
-      return MasterPasswordConfiguration.recoveryRequired;
+      return classifyConfiguration(values);
     } catch (_) {
       return MasterPasswordConfiguration.recoveryRequired;
     }
+  }
+
+  static MasterPasswordConfiguration classifyConfiguration(
+      List<String?> values) {
+    if (values.length != 3) {
+      throw ArgumentError.value(values.length, 'values', 'Expected three keys');
+    }
+    if (values.every((value) => value == null)) {
+      return MasterPasswordConfiguration.notSet;
+    }
+    if (values.every((value) => value != null && value.isNotEmpty)) {
+      return MasterPasswordConfiguration.configured;
+    }
+    return MasterPasswordConfiguration.recoveryRequired;
   }
 
   Future<bool> isMasterPasswordSet() async {
