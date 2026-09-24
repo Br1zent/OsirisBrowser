@@ -113,6 +113,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // A successful OS prompt does not recover the master password or the
     // encryption key. Do not grant app access until a protected key-unlock
     // flow exists.
+    MasterPasswordService.instance.lock();
     emit(state.copyWith(
       status: AuthStatus.locked,
       biometricAvailable: false,
