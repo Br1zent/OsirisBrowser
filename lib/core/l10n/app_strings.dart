@@ -95,8 +95,11 @@ class AppStrings {
                                        : 'Prevent real IP leaks via WebRTC';
   String get javascriptDesc     => _ru ? 'Разрешить выполнение JavaScript'
                                        : 'Allow JavaScript execution';
-  String get cookiesDesc        => _ru ? 'Разрешить сохранение cookies'
-                                       : 'Allow cookies to be saved';
+  String get cookiesTitle       => _ru ? 'Cookies в JavaScript'
+                                       : 'JavaScript cookie access';
+  String get cookiesDesc        => _ru
+      ? 'Пытается скрыть document.cookie; WebView всё ещё может хранить и отправлять HTTP-cookies'
+      : 'Attempts to hide document.cookie; WebView may still store and send HTTP cookies';
   String get historyDesc        => _ru ? 'Сохранять историю посещений'
                                        : 'Save browsing history';
   String get clearOnExitDesc    => _ru ? 'Удалять все данные при закрытии'
