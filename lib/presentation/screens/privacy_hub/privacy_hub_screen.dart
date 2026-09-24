@@ -708,6 +708,33 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             onChanged: (v) =>
                 _updateSettings(context, s.copyWith(blockWebRtc: v)),
           ),
+          const Divider(height: 16, color: AppColors.anthraciteLight),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline_rounded,
+                    color: AppColors.grayMid, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(str.dnsOverHttps,
+                          style: const TextStyle(
+                              color: AppColors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500)),
+                      Text(str.dohUnavailableDesc,
+                          style: const TextStyle(
+                              color: AppColors.grayMid, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
