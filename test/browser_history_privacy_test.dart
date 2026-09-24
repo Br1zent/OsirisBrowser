@@ -22,10 +22,8 @@ void main() {
       'Private page',
       isPrivate: true,
     ));
-    await Future<void>.delayed(Duration.zero);
-
-    expect(history.entries, isEmpty);
     await bloc.close();
+    expect(history.entries, isEmpty);
   });
 
   test('non-private visits can be persisted in history', () async {
@@ -42,9 +40,9 @@ void main() {
       isPrivate: false,
     ));
     await history.added;
+    await bloc.close();
 
     expect(history.entries, hasLength(1));
-    await bloc.close();
   });
 }
 
