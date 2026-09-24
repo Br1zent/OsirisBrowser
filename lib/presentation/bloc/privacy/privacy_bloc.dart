@@ -4,6 +4,7 @@ import '../../../domain/entities/privacy_settings.dart';
 import '../../../domain/repositories/privacy_settings_repository.dart';
 import '../../../domain/repositories/history_repository.dart';
 import '../../../domain/repositories/bookmark_repository.dart';
+import '../../../domain/repositories/browser_data_repository.dart';
 
 part 'privacy_event.dart';
 part 'privacy_state.dart';
@@ -12,11 +13,13 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
   final PrivacySettingsRepository settingsRepository;
   final HistoryRepository historyRepository;
   final BookmarkRepository bookmarkRepository;
+  final BrowserDataRepository browserDataRepository;
 
   PrivacyBloc({
     required this.settingsRepository,
     required this.historyRepository,
     required this.bookmarkRepository,
+    required this.browserDataRepository,
   }) : super(const PrivacyState()) {
     on<PrivacyLoadSettings>(_onLoadSettings);
     on<PrivacyUpdateSettings>(_onUpdateSettings);
@@ -62,6 +65,7 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
       PrivacyNukeAllData event, Emitter<PrivacyState> emit) async {
     emit(state.copyWith(status: PrivacyStatus.nuking));
     try {
+      await browserDataRepository.clearAll();
       await historyRepository.clearAllHistory();
       if (event.clearBookmarks) {
         await bookmarkRepository.deleteAllBookmarks();
