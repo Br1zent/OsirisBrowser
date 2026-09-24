@@ -237,15 +237,23 @@ class _BrowserScreenState extends State<BrowserScreen>
   }
 
   bool _isTrackerUrl(String url) {
-    const blocked = [
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasAuthority) return false;
+
+    final host = uri.host.toLowerCase();
+    const blockedHosts = {
       'google-analytics.com', 'googletagmanager.com', 'doubleclick.net',
-      'facebook.com/tr', 'connect.facebook.net', 'analytics.twitter.com',
-      'static.ads-twitter.com', 'snap.licdn.com', 'scorecardresearch.com',
-      'quantserve.com', 'adnxs.com', 'adsrvr.org', 'googlesyndication.com',
-      'rubiconproject.com', 'openx.net', 'pubmatic.com', 'advertising.com',
-    ];
-    final l = url.toLowerCase();
-    return blocked.any((d) => l.contains(d));
+      'connect.facebook.net', 'analytics.twitter.com', 'static.ads-twitter.com',
+      'snap.licdn.com', 'scorecardresearch.com', 'quantserve.com', 'adnxs.com',
+      'adsrvr.org', 'googlesyndication.com', 'rubiconproject.com', 'openx.net',
+      'pubmatic.com', 'advertising.com',
+    };
+    final isBlockedHost = blockedHosts.any(
+      (domain) => host == domain || host.endsWith('.$domain'),
+    );
+    final isFacebookPixel = host == 'facebook.com' &&
+        (uri.path == '/tr' || uri.path.startsWith('/tr/'));
+    return isBlockedHost || isFacebookPixel;
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────────
