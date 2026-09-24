@@ -96,10 +96,12 @@ class BrowserToggleBookmark extends BrowserEvent {
 class BrowserAddToHistory extends BrowserEvent {
   final String url;
   final String title;
-  const BrowserAddToHistory(this.url, this.title);
+  final bool isPrivate;
+  // Default to private so callers must explicitly opt into persistent history.
+  const BrowserAddToHistory(this.url, this.title, {this.isPrivate = true});
 
   @override
-  List<Object?> get props => [url, title];
+  List<Object?> get props => [url, title, isPrivate];
 }
 
 class BrowserShow extends BrowserEvent {
