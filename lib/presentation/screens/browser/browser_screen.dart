@@ -391,6 +391,12 @@ class _BrowserScreenState extends State<BrowserScreen>
           onWebViewCreated: (ctrl) {
             _controllers[tab.id] = ctrl;
           },
+          // Camera and microphone have no first-party consent UI, so web
+          // origins cannot receive those capabilities.
+          onPermissionRequest: (ctrl, request) async => PermissionResponse(
+            resources: request.resources,
+            action: PermissionResponseAction.DENY,
+          ),
           onLoadStart: (ctrl, url) async {
             final urlStr = url?.toString() ?? '';
             final bloc = context.read<BrowserBloc>();

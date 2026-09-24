@@ -38,20 +38,8 @@
     </array>
 
     <!-- ─── Privacy Descriptions ─────────────────────────────────────── -->
-    <key>NSCameraUsageDescription</key>
-    <string>Osiris Browser may use the camera for web pages that request camera access.</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Osiris Browser may use the microphone for web pages that request audio access.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Osiris Browser may access your photo library for file uploads on websites.</string>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>Osiris Browser may save images to your photo library when downloading from websites.</string>
     <key>NSFaceIDUsageDescription</key>
     <string>Use Face ID to quickly unlock Osiris Browser.</string>
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Some websites may request location access. Osiris never stores your location.</string>
-    <key>NSContactsUsageDescription</key>
-    <string>Some websites may request access to contacts.</string>
 
     <!-- ─── App Transport Security ────────────────────────────────────── -->
     <key>NSAppTransportSecurity</key>
@@ -103,7 +91,7 @@
     <key>UIScreenEdgeDeferringSystemGestures</key>
     <array/>
 
-    <!-- Disable iCloud backup of sensitive data -->
+    <!-- User files are not exposed through Files or document browser. -->
     <key>UIFileSharingEnabled</key>
     <false/>
     <key>LSSupportsOpeningDocumentsInPlace</key>

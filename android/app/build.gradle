@@ -45,7 +45,7 @@ android {
 
     defaultConfig {
         applicationId "com.brizproject.osiris"
-        minSdkVersion 21
+        minSdkVersion 26
         targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

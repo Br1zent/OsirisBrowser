@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/services.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -27,11 +30,26 @@ class AppDatabase {
     final dir = await getApplicationDocumentsDirectory();
     final path = p.join(dir.path, AppConstants.dbName);
 
-    return openDatabase(
+    if (Platform.isIOS) {
+      await _excludeFromBackup([dir.path, path, '$path-wal', '$path-shm']);
+    }
+
+    final db = await openDatabase(
       path,
       version: AppConstants.dbVersion,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
+    );
+    if (Platform.isIOS) {
+      await _excludeFromBackup([dir.path, path, '$path-wal', '$path-shm']);
+    }
+    return db;
+  }
+
+  Future<void> _excludeFromBackup(List<String> paths) async {
+    await const MethodChannel('osiris/platform_security').invokeMethod<void>(
+      'excludeFromBackup',
+      {'paths': paths},
     );
   }
 
