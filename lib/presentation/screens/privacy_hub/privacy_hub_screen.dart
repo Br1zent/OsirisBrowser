@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/security/encryption_service.dart';
 import '../../../domain/entities/privacy_settings.dart';
 import '../../bloc/privacy/privacy_bloc.dart';
 import '../../widgets/glass_card.dart';
@@ -103,9 +102,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
                             const SizedBox(height: 32),
                             _buildEncryptionStatus(),
                             const SizedBox(height: 20),
-                            _buildFingerprintSection(context, state),
-                            const SizedBox(height: 20),
-                            _buildNetworkSection(context, state),
+                            _buildUnsupportedProtectionNotice(context),
                             const SizedBox(height: 20),
                             _buildBrowsingSection(context, state),
                             const SizedBox(height: 20),
@@ -190,7 +187,11 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
               ),
             ),
           ),
-          const PrivacyIndicator(isSecure: true, showLabel: true),
+          const PrivacyIndicator(
+            isSecure: false,
+            label: 'Unverified',
+            showLabel: true,
+          ),
         ],
       ),
     );
@@ -522,7 +523,8 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
 
   Widget _buildEncryptionStatus() {
     final s = AppStrings.of(context);
-    final isEncrypted = EncryptionService.instance.isInitialized;
+    // A key in RAM does not prove that the database backend encrypts data.
+    const isEncrypted = false;
 
     return GlassCard(
       padding: const EdgeInsets.all(16),
@@ -641,72 +643,18 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
     );
   }
 
-  // ─── Fingerprint Section ────────────────────────────────────────────────
-
-  Widget _buildFingerprintSection(BuildContext context, PrivacyState state) {
+  Widget _buildUnsupportedProtectionNotice(BuildContext context) {
     final str = AppStrings.of(context);
-    final s = state.settings;
     return GlassCard(
       padding: const EdgeInsets.all(16),
       borderRadius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader('Fingerprinting Protection', Icons.fingerprint),
-          _buildToggleRow(
-            title: 'Canvas Blocking',
-            subtitle: str.canvasDesc,
-            value: s.blockCanvasFingerprint,
-            onChanged: (v) => _updateSettings(
-                context, s.copyWith(blockCanvasFingerprint: v)),
-          ),
-          const Divider(height: 16, color: AppColors.anthraciteLight),
-          _buildToggleRow(
-            title: 'AudioContext Blocking',
-            subtitle: str.audioDesc,
-            value: s.blockAudioFingerprint,
-            onChanged: (v) => _updateSettings(
-                context, s.copyWith(blockAudioFingerprint: v)),
-          ),
-          const Divider(height: 16, color: AppColors.anthraciteLight),
-          _buildToggleRow(
-            title: 'WebGL Blocking',
-            subtitle: str.webglDesc,
-            value: s.blockWebGLFingerprint,
-            onChanged: (v) => _updateSettings(
-                context, s.copyWith(blockWebGLFingerprint: v)),
-          ),
-          const Divider(height: 16, color: AppColors.anthraciteLight),
-          _buildToggleRow(
-            title: 'Timezone Spoofing',
-            subtitle: str.timezoneDesc,
-            value: s.spoofTimezone,
-            onChanged: (v) =>
-                _updateSettings(context, s.copyWith(spoofTimezone: v)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─── Network Section ────────────────────────────────────────────────────
-
-  Widget _buildNetworkSection(BuildContext context, PrivacyState state) {
-    final str = AppStrings.of(context);
-    final s = state.settings;
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
-      borderRadius: 16,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader('Network Privacy', Icons.network_check_rounded),
-          _buildToggleRow(
-            title: 'WebRTC Blocking',
-            subtitle: str.webrtcDesc,
-            value: s.blockWebRtc,
-            onChanged: (v) =>
-                _updateSettings(context, s.copyWith(blockWebRtc: v)),
+          _buildSectionHeader('Fingerprinting and WebRTC', Icons.shield_outlined),
+          Text(
+            str.runtimeProtectionUnavailable,
+            style: const TextStyle(color: AppColors.grayMid, fontSize: 12),
           ),
         ],
       ),

@@ -181,7 +181,11 @@ class _HomeScreenState extends State<HomeScreen>
                       fontSize: 17,
                     ),
               ),
-              const PrivacyIndicator(isSecure: true, showLabel: true),
+              const PrivacyIndicator(
+                isSecure: false,
+                label: 'Unverified',
+                showLabel: true,
+              ),
             ],
           ),
           const Spacer(),
@@ -489,16 +493,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildPrivacyStatus() {
     return BlocBuilder<PrivacyBloc, PrivacyState>(
-      builder: (context, state) {
-        final settings = state.settings;
-        final protections = [
-          ('WebRTC', settings.blockWebRtc),
-          ('Canvas', settings.blockCanvasFingerprint),
-          ('WebGL', settings.blockWebGLFingerprint),
-          ('Audio', settings.blockAudioFingerprint),
-        ];
-        final activeCount = protections.where((p) => p.$2).length;
-
+      builder: (context, _) {
         return GlassCard(
           padding: const EdgeInsets.all(16),
           borderRadius: 16,
@@ -508,7 +503,7 @@ class _HomeScreenState extends State<HomeScreen>
               Row(
                 children: [
                   const Icon(Icons.shield_rounded,
-                      color: AppColors.privacyGreen, size: 18),
+                      color: AppColors.warning, size: 18),
                   const SizedBox(width: 8),
                   Text(
                     AppStrings.of(context).privacyShield,
@@ -522,13 +517,13 @@ class _HomeScreenState extends State<HomeScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.privacyGreen.withOpacity(0.15),
+                      color: AppColors.warning.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '$activeCount/4 Active',
+                      'Unverified',
                       style: const TextStyle(
-                        color: AppColors.privacyGreen,
+                        color: AppColors.warning,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -537,49 +532,9 @@ class _HomeScreenState extends State<HomeScreen>
                 ],
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: protections.map((p) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: p.$2
-                          ? AppColors.privacyGreen.withOpacity(0.12)
-                          : AppColors.whiteAlpha05,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: p.$2
-                            ? AppColors.privacyGreen.withOpacity(0.3)
-                            : AppColors.anthraciteLight,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          p.$2 ? Icons.check_circle_rounded : Icons.circle_outlined,
-                          size: 12,
-                          color: p.$2
-                              ? AppColors.privacyGreen
-                              : AppColors.grayMid,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          p.$1,
-                          style: TextStyle(
-                            color: p.$2
-                                ? AppColors.privacyGreen
-                                : AppColors.grayMid,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+              const Text(
+                'Fingerprinting and WebRTC protection are unavailable.',
+                style: TextStyle(color: AppColors.grayMid, fontSize: 12),
               ),
             ],
           ),
