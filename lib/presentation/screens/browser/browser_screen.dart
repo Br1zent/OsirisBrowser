@@ -14,6 +14,7 @@ import '../../widgets/glass_card.dart';
 import '../../widgets/osiris_logo.dart';
 import '../../widgets/tab_card_switcher.dart';
 import 'anti_fingerprint_js.dart';
+import 'navigation_policy.dart';
 
 // Per-tab runtime display state (URL bar, loading, navigation)
 class _TabDisplay {
@@ -451,7 +452,9 @@ class _BrowserScreenState extends State<BrowserScreen>
           },
           shouldOverrideUrlLoading: (ctrl, action) async {
             final url = action.request.url?.toString() ?? '';
-            if (_isTrackerUrl(url)) return NavigationActionPolicy.CANCEL;
+            if (_isTrackerUrl(url) || !isAllowedBrowserNavigationUrl(url)) {
+              return NavigationActionPolicy.CANCEL;
+            }
             return NavigationActionPolicy.ALLOW;
           },
           onScrollChanged: (ctrl, x, y) {
