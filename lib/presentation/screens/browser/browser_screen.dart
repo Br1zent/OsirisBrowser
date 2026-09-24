@@ -172,6 +172,12 @@ class _BrowserScreenState extends State<BrowserScreen>
   _TabDisplay _activeDisplay(BrowserState state) =>
       _displays[state.activeTabId] ?? _TabDisplay();
 
+  bool _isTabOpen(String tabId) => context
+      .read<BrowserBloc>()
+      .state
+      .tabs
+      .any((tab) => tab.id == tabId);
+
   void _navigateTo(String input) {
     final isUrl = input.startsWith('http://') ||
         input.startsWith('https://') ||
@@ -409,10 +415,11 @@ class _BrowserScreenState extends State<BrowserScreen>
             _controllers[tab.id] = ctrl;
           },
           onLoadStart: (ctrl, url) async {
+            if (!mounted || !_isTabOpen(tab.id)) return;
             final urlStr = url?.toString() ?? '';
             final bloc = context.read<BrowserBloc>();
             await _injectAntiFingerprint(ctrl);
-            if (!mounted) return;
+            if (!mounted || !_isTabOpen(tab.id)) return;
             setState(() {
               final d = _displays[tab.id] ??= _TabDisplay();
               d.url = urlStr;
@@ -426,14 +433,25 @@ class _BrowserScreenState extends State<BrowserScreen>
             bloc.add(BrowserPageStarted(urlStr, tab.id));
           },
           onLoadStop: (ctrl, url) async {
+            if (!mounted || !_isTabOpen(tab.id)) return;
             final urlStr = url?.toString() ?? '';
             final bloc = context.read<BrowserBloc>();
             final privacyBloc = context.read<PrivacyBloc>();
-            final title = await ctrl.getTitle() ?? '';
-            final cbk = await ctrl.canGoBack();
-            final cfw = await ctrl.canGoForward();
-            await _injectAntiFingerprint(ctrl);
-            if (!mounted) return;
+            late final String title;
+            late final bool cbk;
+            late final bool cfw;
+            try {
+              title = await ctrl.getTitle() ?? '';
+              cbk = await ctrl.canGoBack();
+              cfw = await ctrl.canGoForward();
+              await _injectAntiFingerprint(ctrl);
+            } catch (error) {
+              if (mounted && _isTabOpen(tab.id)) {
+                debugPrint('Could not read WebView state after load: $error');
+              }
+              return;
+            }
+            if (!mounted || !_isTabOpen(tab.id)) return;
             setState(() {
               final d = _displays[tab.id] ??= _TabDisplay();
               d.url = urlStr;
@@ -465,7 +483,7 @@ class _BrowserScreenState extends State<BrowserScreen>
                 BrowserProgressChanged(progress / 100, tab.id));
           },
           onReceivedError: (ctrl, req, err) {
-            if (!mounted) return;
+            if (!mounted || !_isTabOpen(tab.id)) return;
             setState(() {
               (_displays[tab.id] ??= _TabDisplay()).isLoading = false;
             });
