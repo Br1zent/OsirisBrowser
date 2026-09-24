@@ -6,14 +6,20 @@ import '../../domain/repositories/browser_data_repository.dart';
 class BrowserDataRepositoryImpl implements BrowserDataRepository {
   @override
   Future<void> clearAll() async {
+    final platform = defaultTargetPlatform;
+    if (platform != TargetPlatform.android &&
+        platform != TargetPlatform.iOS &&
+        platform != TargetPlatform.macOS) {
+      throw UnsupportedError('Web data clearing is unsupported on $platform');
+    }
+
     await InAppWebViewController.clearAllCache();
     await CookieManager.instance().deleteAllCookies();
 
     final storage = WebStorageManager.instance();
-    if (defaultTargetPlatform == TargetPlatform.android) {
+    if (platform == TargetPlatform.android) {
       await storage.deleteAllData();
-    } else if (defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS) {
+    } else {
       final records = await storage.fetchDataRecords(
         dataTypes: WebsiteDataType.values,
       );
