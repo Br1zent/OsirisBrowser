@@ -6,12 +6,13 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../constants/app_constants.dart';
 import '../../data/datasources/local/app_database.dart';
 import '../../domain/repositories/bookmark_repository.dart';
 import '../../domain/repositories/history_repository.dart';
 import 'master_password_service.dart';
 
-enum WipeScope { nuke, reset }
+enum WipeScope { nuke, reset, session }
 
 class WipeReport {
   final Map<String, String?> components;
@@ -47,6 +48,11 @@ class DataWipeService {
     required Future<void> Function() stopWebViews,
     bool clearBookmarks = false,
   }) async {
+    if (scope == WipeScope.session && !_supportsNativeWebViewWipe()) {
+      return const WipeReport({
+        'webViewData': 'clear-on-exit is unavailable on this platform',
+      });
+    }
     if (scope == WipeScope.nuke && !clearBookmarks) {
       return const WipeReport({
         'bookmarks': 'preserving bookmarks is not supported during a full nuke',
@@ -99,19 +105,20 @@ class DataWipeService {
     if (!await marker.exists()) return true;
     final parts = (await marker.readAsString()).split(':');
     if (parts.length != 2 ||
-        parts[0] != 'nuke' ||
+        !{'nuke', 'session'}.contains(parts[0]) ||
         !{'true', 'false'}.contains(parts[1])) {
       throw StateError('Invalid pending wipe marker');
     }
+    final scope = parts[0] == 'session' ? WipeScope.session : WipeScope.nuke;
     final report = await wipe(
-      scope: WipeScope.nuke,
+      scope: scope,
       clearBookmarks: parts[1] == 'true',
       stopWebViews: stopWebViews,
     );
     if (!report.succeeded) {
       throw StateError('Pending wipe incomplete: ${report.failedComponents.join(', ')}');
     }
-    return false;
+    return scope == WipeScope.session;
   }
 
   static Future<File> _markerFile() async {
@@ -136,17 +143,24 @@ class DataWipeService {
     required SharedPreferences preferences,
   }) async {
     final marker = await _markerFile();
-    if (!await marker.exists()) return;
+    if (!await marker.exists()) {
+      if (!(preferences.getBool(AppConstants.prefClearOnExit) ?? true)) return;
+      if (!_supportsNativeWebViewWipe()) return;
+      await _persistMarker(marker, WipeScope.session, false);
+    }
     final parts = (await marker.readAsString()).split(':');
     if (parts.length != 2 ||
-        !{'nuke', 'reset'}.contains(parts[0]) ||
+        !{'nuke', 'reset', 'session'}.contains(parts[0]) ||
         !{'true', 'false'}.contains(parts[1])) {
       throw StateError('Invalid pending wipe marker');
     }
     if (parts[0] == 'nuke' && parts[1] != 'true') {
       throw StateError('Pending NUKE cannot retain bookmarks safely');
     }
-    if (parts[0] != 'reset' && parts[0] != 'nuke') return;
+    if (parts[0] == 'session' || parts[0] == 'nuke') {
+      await _clearWebViewData();
+      return; // app history is cleared after vault unlock.
+    }
     await _clearWebViewData();
     await AppDatabase.deleteFiles();
     await preferences.clear();
@@ -156,9 +170,7 @@ class DataWipeService {
 
   static Future<void> _clearWebViewData() async {
     final platform = defaultTargetPlatform;
-    if (platform != TargetPlatform.android &&
-        platform != TargetPlatform.iOS &&
-        platform != TargetPlatform.macOS) {
+    if (!_supportsNativeWebViewWipe()) {
       throw UnsupportedError('Native WebView data wipe is unavailable on $platform');
     }
     await InAppWebViewController.clearAllCache();
@@ -176,6 +188,11 @@ class DataWipeService {
       );
     }
   }
+
+  static bool _supportsNativeWebViewWipe() =>
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.macOS;
 
   static Future<void> _step(
       Map<String, String?> report, String name, Future<void> Function() action) async {
