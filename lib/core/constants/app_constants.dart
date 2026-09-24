@@ -95,6 +95,8 @@ class AppConstants {
   static const String prefDohEnabled = 'pref_doh_enabled';
   static const String prefDohProvider = 'pref_doh_provider';
   static const String prefAutoClearInterval = 'pref_auto_clear_interval';
+  static const String prefSaveHistory = 'pref_save_history';
+  static const String prefAdBlockEnabled = 'pref_ad_block_enabled';
   static const String prefClearOnExit = 'pref_clear_on_exit';
   static const String prefJavascriptEnabled = 'pref_javascript_enabled';
   static const String prefCookiesEnabled = 'pref_cookies_enabled';

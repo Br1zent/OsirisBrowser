@@ -34,6 +34,8 @@ class PrivacySettingsRepositoryImpl implements PrivacySettingsRepository {
       autoClearInterval:
           _prefs.getInt(AppConstants.prefAutoClearInterval) ?? 0,
       clearOnExit: _prefs.getBool(AppConstants.prefClearOnExit) ?? true,
+      saveHistory: _prefs.getBool(AppConstants.prefSaveHistory) ?? false,
+      adBlockEnabled: _prefs.getBool(AppConstants.prefAdBlockEnabled) ?? true,
     );
   }
 
@@ -62,6 +64,8 @@ class PrivacySettingsRepositoryImpl implements PrivacySettingsRepository {
       _prefs.setInt(
           AppConstants.prefAutoClearInterval, settings.autoClearInterval),
       _prefs.setBool(AppConstants.prefClearOnExit, settings.clearOnExit),
+      _prefs.setBool(AppConstants.prefSaveHistory, settings.saveHistory),
+      _prefs.setBool(AppConstants.prefAdBlockEnabled, settings.adBlockEnabled),
     ]);
   }
 
