@@ -70,15 +70,17 @@ class _IosPrivacyCoverGateState extends State<IosPrivacyCoverGate>
   bool _isSafeFrame() {
     if (!mounted ||
         !Platform.isIOS ||
-        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed ||
-        context.read<BrowserBloc>().state.isBrowserVisible) {
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
       return false;
     }
 
     final status = context.read<AuthBloc>().state.status;
+    final browserVisible = context.read<BrowserBloc>().state.isBrowserVisible;
     final route = AppRouter.router.routeInformationProvider.value.uri.path;
     if (route == AppRouter.welcomeRoute) {
-      return status != AuthStatus.initial && status != AuthStatus.loading;
+      return !browserVisible &&
+          status != AuthStatus.initial &&
+          status != AuthStatus.loading;
     }
     final isProtectedRoute =
         route == AppRouter.homeRoute || route.startsWith('${AppRouter.homeRoute}/');

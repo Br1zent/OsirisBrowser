@@ -72,7 +72,8 @@ require(database.count("_excludeFromBackup([dir.path, path, '$path-wal', '$path-
 privacy_gate = (ROOT / "lib/core/security/ios_privacy_cover_gate.dart").read_text()
 require("addPostFrameCallback" in privacy_gate, "iOS cover release must wait for a rendered frame")
 require("routeInformationProvider" in privacy_gate, "iOS cover release must check the resolved route")
-require("isBrowserVisible" in privacy_gate, "iOS cover release must wait for the browser overlay to hide")
+require("!browserVisible" in privacy_gate,
+        "iOS cover release on the unlock route must wait for the browser overlay to hide")
 require("AuthStatus.authenticated" in privacy_gate, "protected routes require an authenticated session")
 secure_storage = (ROOT / "lib/core/security/secure_storage.dart").read_text()
 require("KeychainAccessibility.first_unlock_this_device" in secure_storage,
