@@ -50,6 +50,8 @@ class _BrowserScreenState extends State<BrowserScreen>
   double _lastScrollY = 0;
   Timer? _autoClearTimer;
   int _lastClearInterval = -2; // sentinel: not yet initialized
+  bool _backgroundClearRequested = false;
+  bool _isClearingBrowserData = false;
   final _urlController = TextEditingController();
 
   late AnimationController _controlsController;
@@ -102,11 +104,18 @@ class _BrowserScreenState extends State<BrowserScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
-    if (lifecycle == AppLifecycleState.paused ||
-        lifecycle == AppLifecycleState.detached) {
-      if (!mounted) return;
-      final settings = context.read<PrivacyBloc>().state.settings;
-      if (settings.clearOnExit) _clearAllBrowserData();
+    if (lifecycle == AppLifecycleState.resumed) {
+      _backgroundClearRequested = false;
+      return;
+    }
+    if (lifecycle != AppLifecycleState.paused || _backgroundClearRequested) {
+      return;
+    }
+
+    _backgroundClearRequested = true;
+    if (!mounted) return;
+    if (context.read<PrivacyBloc>().state.settings.clearOnExit) {
+      _startBrowserDataClear();
     }
   }
 
@@ -119,9 +128,21 @@ class _BrowserScreenState extends State<BrowserScreen>
     _autoClearTimer = null;
     if (interval > 0) {
       _autoClearTimer = Timer.periodic(Duration(seconds: interval), (_) {
-        if (mounted) _clearAllBrowserData();
+        _startBrowserDataClear();
       });
     }
+  }
+
+  void _startBrowserDataClear() {
+    if (!mounted || _isClearingBrowserData) return;
+    _isClearingBrowserData = true;
+    unawaited(_clearAllBrowserData()
+        .catchError((Object error, StackTrace stackTrace) {
+          debugPrint('Browser data clearing failed: $error');
+        })
+        .whenComplete(() {
+          _isClearingBrowserData = false;
+        }));
   }
 
   Future<void> _clearAllBrowserData() async {
