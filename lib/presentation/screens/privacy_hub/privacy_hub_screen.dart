@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/security/encryption_service.dart';
 import '../../../domain/entities/privacy_settings.dart';
+import '../browser/privacy_webview_settings.dart';
 import '../../bloc/privacy/privacy_bloc.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/privacy_indicator.dart';
@@ -609,7 +610,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
     required String title,
     required String subtitle,
     required bool value,
-    required ValueChanged<bool> onChanged,
+    required ValueChanged<bool>? onChanged,
     Color? activeColor,
   }) {
     return Padding(
@@ -741,13 +742,21 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
                 _updateSettings(context, s.copyWith(cookiesEnabled: v)),
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
-          _buildToggleRow(
-            title: 'Block 3rd-Party Cookies',
-            subtitle: str.thirdPartyCookiesDesc,
-            value: s.blockThirdPartyCookies,
-            onChanged: (v) => _updateSettings(
-                context, s.copyWith(blockThirdPartyCookies: v)),
-          ),
+          if (supportsThirdPartyCookieControl(defaultTargetPlatform))
+            _buildToggleRow(
+              title: 'Block 3rd-Party Cookies',
+              subtitle: str.thirdPartyCookiesDesc,
+              value: s.blockThirdPartyCookies,
+              onChanged: (v) => _updateSettings(
+                  context, s.copyWith(blockThirdPartyCookies: v)),
+            )
+          else
+            _buildToggleRow(
+              title: 'Block 3rd-Party Cookies',
+              subtitle: str.thirdPartyCookiesUnavailable,
+              value: false,
+              onChanged: null,
+            ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
           _buildToggleRow(
             title: 'Save History',
