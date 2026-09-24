@@ -26,27 +26,19 @@ class SecureStorage {
   static const _iosOptions = IOSOptions(
     accessibility: KeychainAccessibility.first_unlock_this_device,
   );
+  static const _macOptions =
+      MacOsOptions(usesDataProtectionKeychain: false);
   static const _fss = FlutterSecureStorage(
     aOptions: _androidOptions,
     iOptions: _iosOptions,
+    mOptions: _macOptions,
   );
 
-  Future<void>? _migration;
-  Future<void> _mutationQueue = Future<void>.value();
+  Future<void> _operationQueue = Future<void>.value();
 
   Future<File> _vaultFile() async {
     final dir = await getApplicationSupportDirectory();
     return File('${dir.path}/$_fileName');
-  }
-
-  Future<void> _ensureLegacyVaultMigrated() async {
-    final pending = _migration ??= _migrateLegacyVault();
-    try {
-      await pending;
-    } catch (_) {
-      _migration = null;
-      rethrow;
-    }
   }
 
   Future<void> _migrateLegacyVault() async {
@@ -86,31 +78,32 @@ class SecureStorage {
     if (keys.remove(key)) await _writeKeyIndex(keys);
   }
 
-  Future<void> _enqueueMutation(Future<void> Function() action) {
-    final pending = _mutationQueue.then((_) => action());
-    _mutationQueue = pending.catchError((Object _) {});
-    return pending;
+  Future<T> _run<T>(Future<T> Function() operation) {
+    final result = _operationQueue.then<T>((_) => operation());
+    _operationQueue =
+        result.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    return result;
   }
 
   Future<void> write({required String key, required String value}) =>
-      _enqueueMutation(() async {
-        await _ensureLegacyVaultMigrated();
+      _run(() async {
+        await _migrateLegacyVault();
         await _trackKey(key);
         await _fss.write(key: key, value: value);
       });
 
-  Future<String?> read({required String key}) async {
-    await _ensureLegacyVaultMigrated();
-    return _fss.read(key: key);
-  }
+  Future<String?> read({required String key}) => _run(() async {
+        await _migrateLegacyVault();
+        return _fss.read(key: key);
+      });
 
-  Future<void> delete({required String key}) => _enqueueMutation(() async {
-        await _ensureLegacyVaultMigrated();
+  Future<void> delete({required String key}) => _run(() async {
+        await _migrateLegacyVault();
         await _fss.delete(key: key);
         await _untrackKey(key);
       });
 
-  Future<void> deleteAll() => _enqueueMutation(() async {
+  Future<void> deleteAll() => _run(() async {
         // Destructive reset should still work if legacy data is malformed.
         final file = await _vaultFile();
         if (await file.exists()) await file.delete();
@@ -124,6 +117,5 @@ class SecureStorage {
         } else {
           await _fss.deleteAll();
         }
-        _migration = null;
       });
 }
