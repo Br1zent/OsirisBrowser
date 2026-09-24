@@ -46,8 +46,8 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
   Future<void> _onUpdateSettings(
       PrivacyUpdateSettings event, Emitter<PrivacyState> emit) async {
     final update = _settingsUpdateQueue.then((_) async {
-      final settings = _applySetting(state.settings, event.key, event.value);
       try {
+        final settings = _applySetting(state.settings, event.key, event.value);
         await settingsRepository.saveSettings(settings);
         emit(state.copyWith(
           status: PrivacyStatus.loaded,
