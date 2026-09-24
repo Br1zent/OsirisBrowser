@@ -10,9 +10,11 @@ import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'data/datasources/local/app_database.dart';
 import 'data/repositories/bookmark_repository_impl.dart';
+import 'data/repositories/browser_data_repository_impl.dart';
 import 'data/repositories/history_repository_impl.dart';
 import 'data/repositories/privacy_settings_repository_impl.dart';
 import 'domain/repositories/bookmark_repository.dart';
+import 'domain/repositories/browser_data_repository.dart';
 import 'domain/repositories/history_repository.dart';
 import 'domain/repositories/privacy_settings_repository.dart';
 import 'presentation/bloc/auth/auth_bloc.dart';
@@ -54,6 +56,7 @@ void main() async {
   final HistoryRepository  historyRepo  = HistoryRepositoryImpl(db);
   final PrivacySettingsRepository privacyRepo =
       PrivacySettingsRepositoryImpl(prefs);
+  final BrowserDataRepository browserDataRepo = BrowserDataRepositoryImpl();
 
   final appState = AppStateService(prefs);
 
@@ -61,6 +64,7 @@ void main() async {
     bookmarkRepository: bookmarkRepo,
     historyRepository: historyRepo,
     privacySettingsRepository: privacyRepo,
+    browserDataRepository: browserDataRepo,
     appState: appState,
   ));
 }
@@ -69,6 +73,7 @@ class OsirisApp extends StatelessWidget {
   final BookmarkRepository bookmarkRepository;
   final HistoryRepository  historyRepository;
   final PrivacySettingsRepository privacySettingsRepository;
+  final BrowserDataRepository browserDataRepository;
   final AppStateService appState;
 
   const OsirisApp({
@@ -76,6 +81,7 @@ class OsirisApp extends StatelessWidget {
     required this.bookmarkRepository,
     required this.historyRepository,
     required this.privacySettingsRepository,
+    required this.browserDataRepository,
     required this.appState,
   });
 
@@ -99,6 +105,7 @@ class OsirisApp extends StatelessWidget {
               settingsRepository: privacySettingsRepository,
               historyRepository: historyRepository,
               bookmarkRepository: bookmarkRepository,
+              browserDataRepository: browserDataRepository,
             ),
           ),
         ],
