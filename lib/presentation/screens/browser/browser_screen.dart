@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -209,31 +210,17 @@ class _BrowserScreenState extends State<BrowserScreen>
     );
   }
 
-  Future<void> _injectAntiFingerprint(
-      InAppWebViewController ctrl) async {
+  UserScript _buildPrivacyUserScript() {
     final settings = context.read<PrivacyBloc>().state.settings;
-    final script = AntiFingerprintJS.buildScript(
+    return AntiFingerprintJS.buildUserScript(
       blockCanvas: settings.blockCanvasFingerprint,
       blockAudio: settings.blockAudioFingerprint,
       blockWebGL: settings.blockWebGLFingerprint,
       blockWebRtc: settings.blockWebRtc,
       spoofTimezone: settings.spoofTimezone,
       blockNavigatorProps: true,
+      cookiesEnabled: settings.cookiesEnabled,
     );
-    await ctrl.evaluateJavascript(source: script);
-    if (!settings.cookiesEnabled) {
-      await ctrl.evaluateJavascript(source: '''
-        (function(){
-          try {
-            Object.defineProperty(document, 'cookie', {
-              get: function() { return ''; },
-              set: function() { return true; },
-              configurable: true
-            });
-          } catch(e) {}
-        })();
-      ''');
-    }
   }
 
   bool _isTrackerUrl(String url) {
@@ -388,13 +375,15 @@ class _BrowserScreenState extends State<BrowserScreen>
           initialUrlRequest:
               URLRequest(url: WebUri(tab.url.isEmpty ? 'https://duckduckgo.com' : tab.url)),
           initialSettings: _buildSettings(),
+          initialUserScripts: UnmodifiableListView<UserScript>([
+            _buildPrivacyUserScript(),
+          ]),
           onWebViewCreated: (ctrl) {
             _controllers[tab.id] = ctrl;
           },
-          onLoadStart: (ctrl, url) async {
+          onLoadStart: (ctrl, url) {
             final urlStr = url?.toString() ?? '';
             final bloc = context.read<BrowserBloc>();
-            await _injectAntiFingerprint(ctrl);
             if (!mounted) return;
             setState(() {
               final d = _displays[tab.id] ??= _TabDisplay();
@@ -415,7 +404,6 @@ class _BrowserScreenState extends State<BrowserScreen>
             final title = await ctrl.getTitle() ?? '';
             final cbk = await ctrl.canGoBack();
             final cfw = await ctrl.canGoForward();
-            await _injectAntiFingerprint(ctrl);
             if (!mounted) return;
             setState(() {
               final d = _displays[tab.id] ??= _TabDisplay();
