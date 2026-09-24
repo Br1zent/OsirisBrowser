@@ -139,10 +139,13 @@ class AppStrings {
   String get searchEngine      => _ru ? 'Поисковая система'         : 'Search Engine';
   String get userAgentString   => _ru ? 'User-Agent строка'         : 'User-Agent String';
   String get autoResetTimer    => _ru ? 'Таймер автосброса'         : 'Auto-Reset Timer';
-  String get encryptionActive  => _ru ? 'AES-256 активно · деривация ключа PBKDF2'
-                                     : 'AES-256 active · PBKDF2 key derivation';
-  String get encryptionInactive => _ru ? 'Шифрование не инициализировано'
-                                      : 'Encryption not initialized';
+  String get encryptionActive  => _ru ? 'Статус шифрования не подтверждён'
+                                     : 'Encryption status unverified';
+  String get encryptionInactive => _ru ? 'Статус шифрования не подтверждён'
+                                      : 'Encryption status unverified';
+  String get runtimeProtectionUnavailable => _ru
+      ? 'Защита от fingerprinting и утечек WebRTC отключена: реализация не подтверждена.'
+      : 'Fingerprinting and WebRTC protection are unavailable because their implementation is unverified.';
   String get wiping            => _ru ? 'ОЧИСТКА...'   : 'WIPING...';
   String get tapToWipe         => _ru ? 'НАЖМИ ДЛЯ ОЧИСТКИ' : 'TAP TO WIPE';
   String get emergencyWipe     => _ru ? 'ЭКСТРЕННАЯ ОЧИСТКА' : 'EMERGENCY WIPE';
