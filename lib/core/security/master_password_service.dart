@@ -11,6 +11,8 @@ enum MasterPasswordStatus {
   error,
 }
 
+enum MasterPasswordConfiguration { notSet, configured, recoveryRequired }
+
 class MasterPasswordService {
   MasterPasswordService._();
 
@@ -21,20 +23,49 @@ class MasterPasswordService {
 
   void initialize() {}
 
-  /// Check if master password has been set
-  Future<bool> isMasterPasswordSet() async {
+  /// A partial or unreadable vault must never be treated as a first launch.
+  Future<MasterPasswordConfiguration> getConfigurationStatus() async {
     try {
-      final hash = await _storage.read(key: AppConstants.masterPasswordKey);
-      return hash != null && hash.isNotEmpty;
-    } catch (e) {
-      return false;
+      final values = await Future.wait([
+        _storage.read(key: AppConstants.masterPasswordKey),
+        _storage.read(key: AppConstants.encryptionSaltKey),
+        _storage.read(key: AppConstants.dbEncryptionKeyKey),
+      ]);
+      return classifyConfiguration(values);
+    } catch (_) {
+      return MasterPasswordConfiguration.recoveryRequired;
     }
+  }
+
+  static MasterPasswordConfiguration classifyConfiguration(
+      List<String?> values) {
+    if (values.length != 3) {
+      throw ArgumentError.value(values.length, 'values', 'Expected three keys');
+    }
+    if (values.every((value) => value == null)) {
+      return MasterPasswordConfiguration.notSet;
+    }
+    if (values.every((value) => value != null && value.isNotEmpty)) {
+      return MasterPasswordConfiguration.configured;
+    }
+    return MasterPasswordConfiguration.recoveryRequired;
+  }
+
+  Future<bool> isMasterPasswordSet() async {
+    final status = await getConfigurationStatus();
+    if (status == MasterPasswordConfiguration.recoveryRequired) {
+      throw StateError('Credential vault is unavailable or incomplete');
+    }
+    return status == MasterPasswordConfiguration.configured;
   }
 
   /// Set up the master password for the first time
   Future<bool> setupMasterPassword(String password) async {
     try {
-      if (!isPasswordValid(password)) return false;
+      if (!isPasswordValid(password) ||
+          await getConfigurationStatus() != MasterPasswordConfiguration.notSet) {
+        return false;
+      }
 
       final salt = EncryptionService.instance.generateSalt();
       final hash = EncryptionService.instance.computePasswordHash(password, salt);
@@ -73,8 +104,14 @@ class MasterPasswordService {
       final storedSalt =
           await _storage.read(key: AppConstants.encryptionSaltKey);
 
-      if (storedHash == null || storedSalt == null) {
+      final wrappedKey =
+          await _storage.read(key: AppConstants.dbEncryptionKeyKey);
+      if (storedHash == null && storedSalt == null && wrappedKey == null) {
         return MasterPasswordStatus.notSet;
+      }
+      if (storedHash == null || storedSalt == null || wrappedKey == null ||
+          storedHash.isEmpty || storedSalt.isEmpty || wrappedKey.isEmpty) {
+        return MasterPasswordStatus.error;
       }
 
       final salt = base64.decode(storedSalt);
@@ -86,6 +123,15 @@ class MasterPasswordService {
       final derivedKey = await EncryptionService.instance
           .deriveKey(password, Uint8List.fromList(salt));
       EncryptionService.instance.initializeWithKey(derivedKey);
+      try {
+        final dbKey = base64.decode(EncryptionService.instance.decrypt(wrappedKey));
+        if (dbKey.length != AppConstants.keyLength) {
+          throw const FormatException('Invalid wrapped database key');
+        }
+      } catch (_) {
+        EncryptionService.instance.clearKey();
+        return MasterPasswordStatus.error;
+      }
 
       return MasterPasswordStatus.verified;
     } catch (e) {
