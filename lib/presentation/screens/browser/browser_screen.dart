@@ -42,6 +42,7 @@ class _BrowserScreenState extends State<BrowserScreen>
   // Controller per tab id
   final Map<String, InAppWebViewController> _controllers = {};
   PrivacySettings? _lastAppliedWebViewSettings;
+  Future<void> _liveSettingsUpdate = Future<void>.value();
   // Display state per tab id
   final Map<String, _TabDisplay> _displays = {};
 
@@ -231,26 +232,9 @@ class _BrowserScreenState extends State<BrowserScreen>
   Widget build(BuildContext context) {
     return BlocListener<PrivacyBloc, PrivacyState>(
       listenWhen: (prev, curr) => prev.settings != curr.settings,
-      listener: (context, state) async {
+      listener: (context, state) {
         _restartAutoClearTimer();
-        final previous = _lastAppliedWebViewSettings;
-        _lastAppliedWebViewSettings = state.settings;
-        if (previous != null &&
-            previous.javascriptEnabled == state.settings.javascriptEnabled &&
-            previous.userAgent == state.settings.userAgent &&
-            previous.blockThirdPartyCookies ==
-                state.settings.blockThirdPartyCookies) {
-          return;
-        }
-        for (final controller in _controllers.values.toList()) {
-          try {
-            await controller.setSettings(
-              settings: buildPrivacyWebViewSettings(state.settings),
-            );
-          } catch (error) {
-            debugPrint('Could not apply privacy settings to a WebView: $error');
-          }
-        }
+        _queueLiveWebViewSettingsUpdate();
       },
       child: BlocConsumer<BrowserBloc, BrowserState>(
       listenWhen: (prev, curr) =>
@@ -373,6 +357,36 @@ class _BrowserScreenState extends State<BrowserScreen>
         );
       },
       ),
+    );
+  }
+
+  void _queueLiveWebViewSettingsUpdate() {
+    Future<void> applyLatest() async {
+      if (!mounted) return;
+      final settings = context.read<PrivacyBloc>().state.settings;
+      final previous = _lastAppliedWebViewSettings;
+      _lastAppliedWebViewSettings = settings;
+      if (previous != null &&
+          previous.javascriptEnabled == settings.javascriptEnabled &&
+          previous.userAgent == settings.userAgent &&
+          previous.blockThirdPartyCookies == settings.blockThirdPartyCookies) {
+        return;
+      }
+
+      for (final controller in _controllers.values.toList()) {
+        try {
+          await controller.setSettings(
+            settings: buildPrivacyWebViewSettings(settings, clearCache: false),
+          );
+        } catch (error) {
+          debugPrint('Could not apply privacy settings to a WebView: $error');
+        }
+      }
+    }
+
+    _liveSettingsUpdate = _liveSettingsUpdate.then<void>(
+      (_) => applyLatest(),
+      onError: (Object _, StackTrace __) => applyLatest(),
     );
   }
 

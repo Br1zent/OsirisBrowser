@@ -15,6 +15,13 @@ void main() {
     expect(settings.javaScriptEnabled, isFalse);
     expect(settings.userAgent, AppConstants.userAgents['Firefox (Windows)']);
     expect(settings.thirdPartyCookiesEnabled, isFalse);
+    expect(settings.clearCache, isTrue);
+
+    final liveUpdate = buildPrivacyWebViewSettings(
+      const PrivacySettings(javascriptEnabled: false),
+      clearCache: false,
+    );
+    expect(liveUpdate.clearCache, isFalse);
   });
 
   test('third-party cookie control is exposed only on Android', () {

@@ -3,7 +3,10 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/entities/privacy_settings.dart';
 
-InAppWebViewSettings buildPrivacyWebViewSettings(PrivacySettings settings) {
+InAppWebViewSettings buildPrivacyWebViewSettings(
+  PrivacySettings settings, {
+  bool clearCache = true,
+}) {
   final userAgent = AppConstants.userAgents[settings.userAgent] ??
       AppConstants.userAgents['Chrome (Windows)']!;
   return InAppWebViewSettings(
@@ -13,7 +16,7 @@ InAppWebViewSettings buildPrivacyWebViewSettings(PrivacySettings settings) {
     javaScriptEnabled: settings.javascriptEnabled,
     userAgent: userAgent,
     cacheEnabled: false,
-    clearCache: true,
+    clearCache: clearCache,
     thirdPartyCookiesEnabled: !settings.blockThirdPartyCookies,
     blockNetworkImage: false,
     disableHorizontalScroll: false,
