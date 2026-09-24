@@ -21,7 +21,9 @@ void main() {
 
     await migrateLegacyVaultFile(
       file: file,
-      storeIfAbsent: (key, value) async { stored[key] = value; },
+      storeIfAbsent: (key, value) async {
+        stored[key] = value;
+      },
     );
 
     expect(stored, {'password': 'hash', 'salt': 'salt-value'});
@@ -35,7 +37,9 @@ void main() {
     await expectLater(
       migrateLegacyVaultFile(
         file: file,
-        storeIfAbsent: (key, value) async => throw StateError('keyring unavailable'),
+        storeIfAbsent: (key, value) async {
+          throw StateError('keyring unavailable');
+        },
       ),
       throwsStateError,
     );
