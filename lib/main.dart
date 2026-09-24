@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core/security/ios_privacy_cover_gate.dart';
 import 'core/security/master_password_service.dart';
 import 'core/services/app_state_service.dart';
 import 'core/theme/app_theme.dart';
@@ -104,17 +103,7 @@ class OsirisApp extends StatelessWidget {
             ),
           ),
         ],
-        child: BlocListener<AuthBloc, AuthState>(
-          listenWhen: (previous, current) =>
-              previous.status != current.status &&
-              current.status != AuthStatus.initial &&
-              current.status != AuthStatus.loading,
-          listener: (_, __) {
-            if (Platform.isIOS) {
-              const MethodChannel('osiris/platform_security')
-                  .invokeMethod<void>('resolvePrivacyCover');
-            }
-          },
+        child: IosPrivacyCoverGate(
           child: Consumer<AppStateService>(
             builder: (context, state, _) {
               return MaterialApp.router(

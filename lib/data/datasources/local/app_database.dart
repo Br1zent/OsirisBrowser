@@ -31,6 +31,7 @@ class AppDatabase {
     final path = p.join(dir.path, AppConstants.dbName);
 
     if (Platform.isIOS) {
+      // Excluding the directory also covers WAL/SHM sidecars created later.
       await _excludeFromBackup([dir.path, path, '$path-wal', '$path-shm']);
     }
 

@@ -20,6 +20,14 @@ import Foundation
       )
       channel.setMethodCallHandler { call, result in
         if call.method == "resolvePrivacyCover" {
+          guard UIApplication.shared.applicationState == .active else {
+            result(FlutterError(
+              code: "APP_NOT_ACTIVE",
+              message: "Privacy cover can only be released while active",
+              details: nil
+            ))
+            return
+          }
           self.privacyCover?.removeFromSuperview()
           self.privacyCover = nil
           result(nil)
