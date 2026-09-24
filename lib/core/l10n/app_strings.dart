@@ -71,8 +71,9 @@ class AppStrings {
   String get fingerprintDesc    => _ru ? 'Блокировка методов идентификации браузера'
                                        : 'Block browser fingerprinting methods';
   String get networkPrivacy     => _ru ? 'Сетевая приватность' : 'Network Privacy';
-  String get networkPrivacyDesc => _ru ? 'Защита на уровне сети и DNS'
-                                       : 'Network-level and DNS protection';
+  String get networkPrivacyDesc => _ru
+      ? 'Защита от утечки IP через WebRTC; DoH пока недоступен'
+      : 'WebRTC IP leak controls; DoH is not currently available';
   String get browsingSettings   => _ru ? 'Настройки браузера'  : 'Browsing Settings';
   String get autoClean          => _ru ? 'Автоочистка'          : 'Auto-Clean';
   String get autoCleanDesc      => _ru ? 'Автоматически удалять данные'
@@ -109,8 +110,10 @@ class AppStrings {
   String get allTracesWiped  => _ru ? 'Все следы уничтожены.' : 'All traces obliterated.';
 
   // ── Privacy Hub extra ───────────────────────────────────────────────────────
-  String get dohDesc         => _ru ? 'Шифрует DNS-запросы'
-                                    : 'Encrypts DNS queries';
+  String get dohDesc         => dohUnavailableDesc;
+  String get dohUnavailableDesc => _ru
+      ? 'DoH не активен; DNS следует настройкам сети устройства'
+      : 'DoH is inactive; DNS follows your device network settings';
   String get thirdPartyCookiesDesc => _ru ? 'Предотвращает межсайтовое отслеживание'
                                           : 'Prevents cross-site tracking';
   String get userAgentDesc   => _ru ? 'Выглядеть как другой браузер или устройство'
@@ -135,7 +138,9 @@ class AppStrings {
   String get clearHistory      => _ru ? 'Очистить историю'          : 'Clear History';
   String get clearHistoryMsg   => _ru ? 'Удалить всю историю посещений?'
                                      : 'Delete all browsing history?';
-  String get doHProvider       => _ru ? 'Провайдер DoH'             : 'DoH Provider';
+  String get dnsOverHttps => _ru ? 'DNS over HTTPS' : 'DNS over HTTPS';
+  String get doHProvider =>
+      _ru ? 'Провайдер DoH (не активен)' : 'DoH provider (inactive)';
   String get searchEngine      => _ru ? 'Поисковая система'         : 'Search Engine';
   String get userAgentString   => _ru ? 'User-Agent строка'         : 'User-Agent String';
   String get autoResetTimer    => _ru ? 'Таймер автосброса'         : 'Auto-Reset Timer';
