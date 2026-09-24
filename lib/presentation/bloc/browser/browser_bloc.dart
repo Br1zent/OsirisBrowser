@@ -195,6 +195,7 @@ class BrowserBloc extends Bloc<BrowserEvent, BrowserState> {
 
   Future<void> _onAddToHistory(
       BrowserAddToHistory event, Emitter<BrowserState> emit) async {
+    if (event.isPrivate) return;
     try {
       await historyRepository.addEntry(HistoryEntry(
         id: _uuid.v4(),

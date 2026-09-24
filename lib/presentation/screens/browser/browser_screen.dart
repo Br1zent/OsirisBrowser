@@ -126,6 +126,23 @@ class _BrowserScreenState extends State<BrowserScreen>
 
   Future<void> _clearAllBrowserData() async {
     await InAppWebViewController.clearAllCache();
+    await CookieManager.instance().deleteAllCookies();
+
+    final storage = WebStorageManager.instance();
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await storage.deleteAllData();
+    } else if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      final records = await storage.fetchDataRecords(
+        dataTypes: WebsiteDataType.values,
+      );
+      if (records.isNotEmpty) {
+        await storage.removeDataFor(
+          dataTypes: WebsiteDataType.values,
+          dataRecords: records,
+        );
+      }
+    }
     if (!mounted) return;
     context.read<PrivacyBloc>().add(const PrivacyClearHistory());
   }
@@ -432,7 +449,11 @@ class _BrowserScreenState extends State<BrowserScreen>
             });
             bloc.add(BrowserPageFinished(urlStr, title, tab.id));
             if (privacyBloc.state.settings.saveHistory) {
-              bloc.add(BrowserAddToHistory(urlStr, title));
+              bloc.add(BrowserAddToHistory(
+                urlStr,
+                title,
+                isPrivate: tab.isPrivate,
+              ));
             }
           },
           onProgressChanged: (ctrl, progress) {
