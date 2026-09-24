@@ -225,16 +225,25 @@ class _BrowserScreenState extends State<BrowserScreen>
   }
 
   Future<void> _queuePrivacyUserScriptUpdate(PrivacySettings settings) {
-    _privacyScriptUpdate = _privacyScriptUpdate.then((_) async {
+    Future<void> replaceScripts() async {
       for (final ctrl in _controllers.values.toList()) {
-        await ctrl.removeUserScriptsByGroupName(
-          groupName: 'osiris-privacy',
-        );
-        await ctrl.addUserScript(
-          userScript: _buildPrivacyUserScript(settings),
-        );
+        try {
+          await ctrl.removeUserScriptsByGroupName(
+            groupName: 'osiris-privacy',
+          );
+          await ctrl.addUserScript(
+            userScript: _buildPrivacyUserScript(settings),
+          );
+        } catch (error) {
+          debugPrint('Could not update a WebView privacy script: $error');
+        }
       }
-    });
+    }
+
+    _privacyScriptUpdate = _privacyScriptUpdate.then<void>(
+      (_) => replaceScripts(),
+      onError: (Object _, StackTrace __) => replaceScripts(),
+    );
     return _privacyScriptUpdate;
   }
 
