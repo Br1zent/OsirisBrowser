@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,7 @@ import '../../widgets/glass_card.dart';
 import '../../widgets/osiris_logo.dart';
 import '../../widgets/tab_card_switcher.dart';
 import 'anti_fingerprint_js.dart';
+import 'browser_url_privacy.dart';
 
 // Per-tab runtime display state (URL bar, loading, navigation)
 class _TabDisplay {
@@ -183,6 +185,8 @@ class _BrowserScreenState extends State<BrowserScreen>
         AppConstants.userAgents['Chrome (Windows)']!;
     return InAppWebViewSettings(
       useShouldOverrideUrlLoading: true,
+      useShouldInterceptRequest:
+          defaultTargetPlatform == TargetPlatform.android,
       mediaPlaybackRequiresUserGesture: true,
       allowsInlineMediaPlayback: false,
       javaScriptEnabled: settings.javascriptEnabled,
@@ -221,32 +225,9 @@ class _BrowserScreenState extends State<BrowserScreen>
       blockNavigatorProps: true,
     );
     await ctrl.evaluateJavascript(source: script);
-    if (!settings.cookiesEnabled) {
-      await ctrl.evaluateJavascript(source: '''
-        (function(){
-          try {
-            Object.defineProperty(document, 'cookie', {
-              get: function() { return ''; },
-              set: function() { return true; },
-              configurable: true
-            });
-          } catch(e) {}
-        })();
-      ''');
-    }
   }
 
-  bool _isTrackerUrl(String url) {
-    const blocked = [
-      'google-analytics.com', 'googletagmanager.com', 'doubleclick.net',
-      'facebook.com/tr', 'connect.facebook.net', 'analytics.twitter.com',
-      'static.ads-twitter.com', 'snap.licdn.com', 'scorecardresearch.com',
-      'quantserve.com', 'adnxs.com', 'adsrvr.org', 'googlesyndication.com',
-      'rubiconproject.com', 'openx.net', 'pubmatic.com', 'advertising.com',
-    ];
-    final l = url.toLowerCase();
-    return blocked.any((d) => l.contains(d));
-  }
+  bool _isTrackerUrl(String url) => TrackerUrlPolicy.isBlocked(url);
 
   // ── Build ─────────────────────────────────────────────────────────────────────
 
@@ -432,7 +413,8 @@ class _BrowserScreenState extends State<BrowserScreen>
             });
             bloc.add(BrowserPageFinished(urlStr, title, tab.id));
             if (privacyBloc.state.settings.saveHistory) {
-              bloc.add(BrowserAddToHistory(urlStr, title));
+              bloc.add(BrowserAddToHistory(
+                  BrowserUrlPrivacy.forHistory(urlStr), title));
             }
           },
           onProgressChanged: (ctrl, progress) {
@@ -454,6 +436,23 @@ class _BrowserScreenState extends State<BrowserScreen>
             if (_isTrackerUrl(url)) return NavigationActionPolicy.CANCEL;
             return NavigationActionPolicy.ALLOW;
           },
+          shouldInterceptRequest:
+              defaultTargetPlatform == TargetPlatform.android
+                  ? (ctrl, request) async {
+                      final url = request.url?.toString() ?? '';
+                      if (_isTrackerUrl(url)) {
+                        return WebResourceResponse(
+                          statusCode: 403,
+                          reasonPhrase: 'Blocked',
+                          headers: const {'Content-Type': 'text/plain'},
+                          contentType: 'text/plain',
+                          contentEncoding: 'utf-8',
+                          data: Uint8List(0),
+                        );
+                      }
+                      return null;
+                    }
+                  : null,
           onScrollChanged: (ctrl, x, y) {
             if (tab.id != state.activeTabId) return;
             final delta = y - _lastScrollY;
@@ -738,8 +737,8 @@ class _BrowserScreenState extends State<BrowserScreen>
                       ),
                       const SizedBox(height: 16),
                       _menuItem(
-                        icon: Icons.share_rounded,
-                        label: 'Share',
+                        icon: Icons.copy_rounded,
+                        label: 'Copy full URL',
                         onTap: () {
                           _hideMoreMenu();
                           Clipboard.setData(ClipboardData(text: display.url));
@@ -773,13 +772,13 @@ class _BrowserScreenState extends State<BrowserScreen>
                         onTap: () async {
                           _hideMoreMenu();
                           final messenger = ScaffoldMessenger.of(context);
-                          await _controllers[state.activeTabId]
-                              ?.evaluateJavascript(
-                                  source: 'window.__osiris?.clearSession()');
                           await InAppWebViewController.clearAllCache();
                           if (mounted) {
                             messenger.showSnackBar(
-                              const SnackBar(content: Text('Session cleared')),
+                              const SnackBar(
+                                content: Text(
+                                    'Cache cleared; cookies and site storage remain.'),
+                              ),
                             );
                           }
                         },

@@ -611,7 +611,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
     required String title,
     required String subtitle,
     required bool value,
-    required ValueChanged<bool> onChanged,
+    required ValueChanged<bool>? onChanged,
     Color? activeColor,
   }) {
     return Padding(
@@ -681,21 +681,47 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
                 _updateSettings(context, s.copyWith(javascriptEnabled: v)),
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
-          _buildToggleRow(
-            title: 'Cookies',
-            subtitle: str.cookiesDesc,
-            value: s.cookiesEnabled,
-            onChanged: (v) =>
-                _updateSettings(context, s.copyWith(cookiesEnabled: v)),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded,
+                    color: AppColors.grayMid, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Cookies',
+                          style: TextStyle(
+                              color: AppColors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500)),
+                      Text(str.cookiesUnavailable,
+                          style: const TextStyle(
+                              color: AppColors.grayMid, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
-          _buildToggleRow(
-            title: 'Block 3rd-Party Cookies',
-            subtitle: str.thirdPartyCookiesDesc,
-            value: s.blockThirdPartyCookies,
-            onChanged: (v) => _updateSettings(
-                context, s.copyWith(blockThirdPartyCookies: v)),
-          ),
+          if (defaultTargetPlatform == TargetPlatform.android)
+            _buildToggleRow(
+              title: 'Block 3rd-Party Cookies',
+              subtitle: str.thirdPartyCookiesDesc,
+              value: s.blockThirdPartyCookies,
+              onChanged: (v) => _updateSettings(
+                  context, s.copyWith(blockThirdPartyCookies: v)),
+            )
+          else
+            _buildToggleRow(
+              title: 'Block 3rd-Party Cookies',
+              subtitle: str.thirdPartyCookiesUnavailable,
+              value: false,
+              onChanged: null,
+            ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
           _buildToggleRow(
             title: 'Save History',
