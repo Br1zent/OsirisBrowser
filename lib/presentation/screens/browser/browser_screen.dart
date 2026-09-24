@@ -437,11 +437,21 @@ class _BrowserScreenState extends State<BrowserScreen>
           },
           onProgressChanged: (ctrl, progress) {
             if (!mounted) return;
+            final nextProgress = progress / 100;
+            final display = _displays[tab.id] ??= _TabDisplay();
+            if (tab.id != state.activeTabId) {
+              display.progress = nextProgress;
+              return;
+            }
+            // WebView reports progress for every network chunk. Rebuilding the
+            // browser tree (including every retained WebView) each time is wasteful.
+            if (nextProgress < 1 &&
+                (nextProgress - display.progress).abs() < 0.02) {
+              return;
+            }
             setState(() {
-              (_displays[tab.id] ??= _TabDisplay()).progress = progress / 100;
+              display.progress = nextProgress;
             });
-            context.read<BrowserBloc>().add(
-                BrowserProgressChanged(progress / 100, tab.id));
           },
           onReceivedError: (ctrl, req, err) {
             if (!mounted) return;
