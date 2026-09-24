@@ -1,3 +1,5 @@
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+
 class AntiFingerprintJS {
   AntiFingerprintJS._();
 
@@ -31,6 +33,49 @@ class AntiFingerprintJS {
   console.log('[Osiris] Anti-fingerprinting layer active.');
 })();
 ''';
+  }
+
+  /// Inject privacy overrides before page scripts start running.
+  ///
+  /// On Android versions without WebView document-start script support, the
+  /// plugin can only inject this as early as possible.
+  static UserScript buildUserScript({
+    bool blockCanvas = true,
+    bool blockAudio = true,
+    bool blockWebGL = true,
+    bool blockWebRtc = true,
+    bool spoofTimezone = true,
+    bool blockNavigatorProps = true,
+    bool cookiesEnabled = true,
+  }) {
+    final source = StringBuffer(buildScript(
+      blockCanvas: blockCanvas,
+      blockAudio: blockAudio,
+      blockWebGL: blockWebGL,
+      blockWebRtc: blockWebRtc,
+      spoofTimezone: spoofTimezone,
+      blockNavigatorProps: blockNavigatorProps,
+    ));
+    if (!cookiesEnabled) {
+      source.write(r'''
+      (function() {
+        try {
+          Object.defineProperty(document, 'cookie', {
+            get: function() { return ''; },
+            set: function() { return true; },
+            configurable: true
+          });
+        } catch(e) {}
+      })();
+      ''');
+    }
+
+    return UserScript(
+      groupName: 'osiris-privacy',
+      source: source.toString(),
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      forMainFrameOnly: false,
+    );
   }
 
   static const String _canvasBlock = r'''
