@@ -457,31 +457,16 @@ def select_keystore():
 
 def apply_to_gradle():
     cfg = load_ks_cfg()
-    if not cfg.get("keystore_path"):
-        print(R("Сначала настрой keystore (пункт 1 или 2)")); return
-    gradle = os.path.join(PROJECT, "android", "app", "build.gradle")
-    with open(gradle) as f: content = f.read()
-    if "signingConfigs" in content and "release {" in content.split("signingConfigs")[1][:100]:
-        print(Y("signingConfigs уже настроен в build.gradle")); return
-    ks_path = cfg["keystore_path"].replace("\\", "/")
-    signing = f"""
-    signingConfigs {{
-        release {{
-            keyAlias '{cfg["key_alias"]}'
-            keyPassword '{cfg["key_password"]}'
-            storeFile file('{ks_path}')
-            storePassword '{cfg["store_password"]}'
-        }}
-    }}
-"""
-    content = content.replace("    buildTypes {", signing + "    buildTypes {")
-    content = content.replace(
-        "        release {\n            signingConfig signingConfigs.debug",
-        "        release {\n            signingConfig signingConfigs.release"
-    )
-    with open(gradle, "w") as f: f.write(content)
-    print(G("build.gradle обновлён с release-подписью"))
-    print(Y("Не коммить build.gradle с паролями в открытом виде!"))
+    required = ("keystore_path", "key_alias", "store_password", "key_password")
+    missing = [key for key in required if not cfg.get(key)]
+    if missing:
+        print(R("Keystore configuration is incomplete: " + ", ".join(missing)))
+        return
+    if not os.path.exists(cfg["keystore_path"]):
+        print(R("Keystore file not found: " + cfg["keystore_path"]))
+        return
+    print(G("Android release signing is configured from the local .keystore_config.json"))
+    print(Y("The config and keystore are ignored by git; never commit either file."))
 
 def show_keystore_info():
     cfg = load_ks_cfg()

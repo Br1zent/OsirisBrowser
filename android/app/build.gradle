@@ -58,17 +58,26 @@ android {
     }
 
 
-    signingConfigs {
-        release {
-            keyAlias 'Osiris'
-            keyPassword 'Br1zent_Best'
-            storeFile file('/Users/brizent/VS_Projects/Osiris Browser/android/app/key.jks')
-            storePassword 'Br1zent_Best'
+    def keystoreConfigFile = rootProject.file('../.keystore_config.json')
+    def keystoreConfig = keystoreConfigFile.exists()
+        ? new groovy.json.JsonSlurper().parse(keystoreConfigFile)
+        : [:]
+
+    if (keystoreConfig.keystore_path) {
+        signingConfigs {
+            release {
+                keyAlias keystoreConfig.key_alias
+                keyPassword keystoreConfig.key_password
+                storeFile file(keystoreConfig.keystore_path)
+                storePassword keystoreConfig.store_password
+            }
         }
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            if (keystoreConfig.keystore_path) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
