@@ -15,6 +15,9 @@ class BrowserSessionController {
   }
 
   Future<void> closeAll() async {
+    if (_closeHandlers.isEmpty) {
+      throw StateError('No WebView close handler is registered');
+    }
     for (final closeHandler in _closeHandlers.toList()) {
       await closeHandler();
     }

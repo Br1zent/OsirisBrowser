@@ -36,11 +36,6 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
         stopWebViews: () async {},
       );
 
-  Future<WipeReport> clearSession() => dataWipeService.wipe(
-        scope: WipeScope.session,
-        stopWebViews: BrowserSessionController.instance.closeAll,
-      );
-
   Future<void> _onLoadSettings(
       PrivacyLoadSettings event, Emitter<PrivacyState> emit) async {
     emit(state.copyWith(status: PrivacyStatus.loading));
