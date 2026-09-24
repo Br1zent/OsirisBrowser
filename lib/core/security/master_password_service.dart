@@ -83,6 +83,18 @@ class MasterPasswordService {
 
       if (!isValid) return MasterPasswordStatus.error;
 
+      // Upgrade legacy fast hashes after a successful login, keeping existing
+      // installations usable while improving their offline-cracking cost.
+      if (!storedHash.startsWith('pbkdf2-sha256-v1:')) {
+        await _storage.write(
+          key: AppConstants.masterPasswordKey,
+          value: EncryptionService.instance.computePasswordHash(
+            password,
+            Uint8List.fromList(salt),
+          ),
+        );
+      }
+
       final derivedKey = await EncryptionService.instance
           .deriveKey(password, Uint8List.fromList(salt));
       EncryptionService.instance.initializeWithKey(derivedKey);
@@ -110,6 +122,7 @@ class MasterPasswordService {
   Future<bool> changeMasterPassword(
       String oldPassword, String newPassword) async {
     try {
+      if (!isPasswordValid(newPassword)) return false;
       final status = await verifyMasterPassword(oldPassword);
       if (status != MasterPasswordStatus.verified) return false;
 
