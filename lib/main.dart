@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core/security/ios_privacy_cover_gate.dart';
 import 'core/security/master_password_service.dart';
 import 'core/services/app_state_service.dart';
 import 'core/theme/app_theme.dart';
@@ -102,57 +103,59 @@ class OsirisApp extends StatelessWidget {
             ),
           ),
         ],
-        child: Consumer<AppStateService>(
-          builder: (context, state, _) {
-            return MaterialApp.router(
-              title: 'Osiris Browser',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.buildTheme(state.accent),
-              locale: state.locale,
-              supportedLocales: const [Locale('en'), Locale('ru')],
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              routerConfig: AppRouter.router,
-              builder: (context, child) {
-                return MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(
-                      MediaQuery.of(context)
-                          .textScaler
-                          .scale(1.0)
-                          .clamp(0.85, 1.3),
+        child: IosPrivacyCoverGate(
+          child: Consumer<AppStateService>(
+            builder: (context, state, _) {
+              return MaterialApp.router(
+                title: 'Osiris Browser',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.buildTheme(state.accent),
+                locale: state.locale,
+                supportedLocales: const [Locale('en'), Locale('ru')],
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                routerConfig: AppRouter.router,
+                builder: (context, child) {
+                  return MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                      textScaler: TextScaler.linear(
+                        MediaQuery.of(context)
+                            .textScaler
+                            .scale(1.0)
+                            .clamp(0.85, 1.3),
+                      ),
                     ),
-                  ),
-                  child: Stack(
-                    children: [
-                      child!,
-                      BlocBuilder<BrowserBloc, BrowserState>(
-                        buildWhen: (p, c) =>
-                            p.isBrowserVisible != c.isBrowserVisible ||
-                            p.hasBeenOpened != c.hasBeenOpened,
-                        builder: (context, state) => Positioned.fill(
-                          child: IgnorePointer(
-                            ignoring: !state.isBrowserVisible,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeInOut,
-                              opacity: state.isBrowserVisible ? 1.0 : 0.0,
-                              child: state.hasBeenOpened
-                                  ? const BrowserScreen()
-                                  : const SizedBox.shrink(),
+                    child: Stack(
+                      children: [
+                        child!,
+                        BlocBuilder<BrowserBloc, BrowserState>(
+                          buildWhen: (p, c) =>
+                              p.isBrowserVisible != c.isBrowserVisible ||
+                              p.hasBeenOpened != c.hasBeenOpened,
+                          builder: (context, state) => Positioned.fill(
+                            child: IgnorePointer(
+                              ignoring: !state.isBrowserVisible,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 220),
+                                curve: Curves.easeInOut,
+                                opacity: state.isBrowserVisible ? 1.0 : 0.0,
+                                child: state.hasBeenOpened
+                                    ? const BrowserScreen()
+                                    : const SizedBox.shrink(),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );
