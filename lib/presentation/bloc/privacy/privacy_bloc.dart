@@ -65,11 +65,11 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
       PrivacyNukeAllData event, Emitter<PrivacyState> emit) async {
     emit(state.copyWith(status: PrivacyStatus.nuking));
     try {
+      await browserDataRepository.clearAll();
       await historyRepository.clearAllHistory();
       if (event.clearBookmarks) {
         await bookmarkRepository.deleteAllBookmarks();
       }
-      await browserDataRepository.clearAll();
       emit(state.copyWith(
         status: PrivacyStatus.nuked,
         message: 'All data obliterated',
