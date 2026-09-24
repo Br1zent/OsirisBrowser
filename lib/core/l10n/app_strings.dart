@@ -111,8 +111,12 @@ class AppStrings {
   // ── Privacy Hub extra ───────────────────────────────────────────────────────
   String get dohDesc         => _ru ? 'Шифрует DNS-запросы'
                                     : 'Encrypts DNS queries';
-  String get thirdPartyCookiesDesc => _ru ? 'Предотвращает межсайтовое отслеживание'
-                                          : 'Prevents cross-site tracking';
+  String get thirdPartyCookiesDesc => _ru
+      ? 'Управляет приёмом сторонних cookies на Android'
+      : 'Controls third-party cookie acceptance on Android';
+  String get thirdPartyCookiesUnavailable => _ru
+      ? 'На этой платформе WebKit не позволяет блокировать сторонние cookies'
+      : 'WebKit does not let this platform block third-party cookies';
   String get userAgentDesc   => _ru ? 'Выглядеть как другой браузер или устройство'
                                     : 'Appear as a different browser/device';
   String get autoResetDesc   => _ru ? 'Автоматически очищать данные сессии'

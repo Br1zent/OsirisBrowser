@@ -8,12 +8,14 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/entities/browser_tab.dart';
+import '../../../domain/entities/privacy_settings.dart';
 import '../../bloc/browser/browser_bloc.dart';
 import '../../bloc/privacy/privacy_bloc.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/osiris_logo.dart';
 import '../../widgets/tab_card_switcher.dart';
 import 'anti_fingerprint_js.dart';
+import 'privacy_webview_settings.dart';
 
 // Per-tab runtime display state (URL bar, loading, navigation)
 class _TabDisplay {
@@ -39,6 +41,8 @@ class _BrowserScreenState extends State<BrowserScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   // Controller per tab id
   final Map<String, InAppWebViewController> _controllers = {};
+  PrivacySettings? _lastAppliedWebViewSettings;
+  Future<void> _liveSettingsUpdate = Future<void>.value();
   // Display state per tab id
   final Map<String, _TabDisplay> _displays = {};
 
@@ -178,34 +182,8 @@ class _BrowserScreenState extends State<BrowserScreen>
   }
 
   InAppWebViewSettings _buildSettings() {
-    final settings = context.read<PrivacyBloc>().state.settings;
-    final ua = AppConstants.userAgents[settings.userAgent] ??
-        AppConstants.userAgents['Chrome (Windows)']!;
-    return InAppWebViewSettings(
-      useShouldOverrideUrlLoading: true,
-      mediaPlaybackRequiresUserGesture: true,
-      allowsInlineMediaPlayback: false,
-      javaScriptEnabled: settings.javascriptEnabled,
-      userAgent: ua,
-      cacheEnabled: false,
-      clearCache: true,
-      thirdPartyCookiesEnabled: !settings.blockThirdPartyCookies,
-      blockNetworkImage: false,
-      disableHorizontalScroll: false,
-      disableVerticalScroll: false,
-      supportZoom: true,
-      builtInZoomControls: true,
-      displayZoomControls: false,
-      allowContentAccess: false,
-      allowFileAccess: false,
-      allowFileAccessFromFileURLs: false,
-      allowUniversalAccessFromFileURLs: false,
-      geolocationEnabled: false,
-      useHybridComposition: true,
-      loadWithOverviewMode: true,
-      useWideViewPort: true,
-      mixedContentMode: MixedContentMode.MIXED_CONTENT_NEVER_ALLOW,
-      safeBrowsingEnabled: true,
+    return buildPrivacyWebViewSettings(
+      context.read<PrivacyBloc>().state.settings,
     );
   }
 
@@ -253,9 +231,11 @@ class _BrowserScreenState extends State<BrowserScreen>
   @override
   Widget build(BuildContext context) {
     return BlocListener<PrivacyBloc, PrivacyState>(
-      listenWhen: (prev, curr) =>
-          prev.settings.autoClearInterval != curr.settings.autoClearInterval,
-      listener: (context, _) => _restartAutoClearTimer(),
+      listenWhen: (prev, curr) => prev.settings != curr.settings,
+      listener: (context, state) {
+        _restartAutoClearTimer();
+        _queueLiveWebViewSettingsUpdate();
+      },
       child: BlocConsumer<BrowserBloc, BrowserState>(
       listenWhen: (prev, curr) =>
           prev.activeTabId != curr.activeTabId ||
@@ -377,6 +357,36 @@ class _BrowserScreenState extends State<BrowserScreen>
         );
       },
       ),
+    );
+  }
+
+  void _queueLiveWebViewSettingsUpdate() {
+    Future<void> applyLatest() async {
+      if (!mounted) return;
+      final settings = context.read<PrivacyBloc>().state.settings;
+      final previous = _lastAppliedWebViewSettings;
+      _lastAppliedWebViewSettings = settings;
+      if (previous != null &&
+          previous.javascriptEnabled == settings.javascriptEnabled &&
+          previous.userAgent == settings.userAgent &&
+          previous.blockThirdPartyCookies == settings.blockThirdPartyCookies) {
+        return;
+      }
+
+      for (final controller in _controllers.values.toList()) {
+        try {
+          await controller.setSettings(
+            settings: buildPrivacyWebViewSettings(settings, clearCache: false),
+          );
+        } catch (error) {
+          debugPrint('Could not apply privacy settings to a WebView: $error');
+        }
+      }
+    }
+
+    _liveSettingsUpdate = _liveSettingsUpdate.then<void>(
+      (_) => applyLatest(),
+      onError: (Object _, StackTrace __) => applyLatest(),
     );
   }
 
