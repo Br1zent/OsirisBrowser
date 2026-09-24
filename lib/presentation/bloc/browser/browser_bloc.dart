@@ -52,6 +52,7 @@ class BrowserBloc extends Bloc<BrowserEvent, BrowserState> {
     emit(state.copyWith(
       tabs: [...state.tabs, newTab],
       activeTabId: newTab.id,
+      isCurrentPageBookmarked: false,
     ));
   }
 
@@ -71,6 +72,7 @@ class BrowserBloc extends Bloc<BrowserEvent, BrowserState> {
       emit(state.copyWith(
         tabs: [newTab],
         activeTabId: newTab.id,
+        isCurrentPageBookmarked: false,
       ));
       return;
     }
@@ -79,10 +81,18 @@ class BrowserBloc extends Bloc<BrowserEvent, BrowserState> {
         ? updatedTabs.last.id
         : state.activeTabId;
 
-    emit(state.copyWith(tabs: updatedTabs, activeTabId: newActiveId));
+    final activeTabChanged = event.tabId == state.activeTabId;
+    emit(state.copyWith(
+      tabs: updatedTabs,
+      activeTabId: newActiveId,
+      isCurrentPageBookmarked:
+          activeTabChanged ? false : state.isCurrentPageBookmarked,
+    ));
+    if (activeTabChanged) await _syncActiveBookmark(newActiveId, emit);
   }
 
-  void _onSwitchTab(BrowserSwitchTab event, Emitter<BrowserState> emit) {
+  Future<void> _onSwitchTab(
+      BrowserSwitchTab event, Emitter<BrowserState> emit) async {
     final updatedTabs = state.tabs.map((t) {
       if (t.id == event.tabId) {
         return t.copyWith(lastAccessedAt: DateTime.now());
@@ -90,7 +100,27 @@ class BrowserBloc extends Bloc<BrowserEvent, BrowserState> {
       return t;
     }).toList();
 
-    emit(state.copyWith(tabs: updatedTabs, activeTabId: event.tabId));
+    emit(state.copyWith(
+      tabs: updatedTabs,
+      activeTabId: event.tabId,
+      isCurrentPageBookmarked: false,
+    ));
+    await _syncActiveBookmark(event.tabId, emit);
+  }
+
+  Future<void> _syncActiveBookmark(
+      String tabId, Emitter<BrowserState> emit) async {
+    final tab = state.tabs.where((t) => t.id == tabId).firstOrNull;
+    if (tab == null || tab.url.isEmpty) return;
+    try {
+      final isBookmarked = await bookmarkRepository.isBookmarked(tab.url);
+      final activeTab = state.activeTab;
+      if (activeTab?.id == tabId && activeTab?.url == tab.url) {
+        emit(state.copyWith(isCurrentPageBookmarked: isBookmarked));
+      }
+    } catch (_) {
+      // Keep the default unbookmarked state if storage is unavailable.
+    }
   }
 
   void _onLoadUrl(BrowserLoadUrl event, Emitter<BrowserState> emit) {
@@ -101,7 +131,12 @@ class BrowserBloc extends Bloc<BrowserEvent, BrowserState> {
       }
       return t;
     }).toList();
-    emit(state.copyWith(tabs: updatedTabs));
+    emit(state.copyWith(
+      tabs: updatedTabs,
+      isCurrentPageBookmarked: tabId == state.activeTabId
+          ? false
+          : state.isCurrentPageBookmarked,
+    ));
   }
 
   void _onPageStarted(BrowserPageStarted event, Emitter<BrowserState> emit) {
@@ -116,10 +151,16 @@ class BrowserBloc extends Bloc<BrowserEvent, BrowserState> {
       }
       return t;
     }).toList();
-    emit(state.copyWith(tabs: updatedTabs));
+    emit(state.copyWith(
+      tabs: updatedTabs,
+      isCurrentPageBookmarked: event.tabId == state.activeTabId
+          ? false
+          : state.isCurrentPageBookmarked,
+    ));
   }
 
-  void _onPageFinished(BrowserPageFinished event, Emitter<BrowserState> emit) {
+  Future<void> _onPageFinished(
+      BrowserPageFinished event, Emitter<BrowserState> emit) async {
     final updatedTabs = state.tabs.map((t) {
       if (t.id == event.tabId) {
         return t.copyWith(
@@ -133,6 +174,9 @@ class BrowserBloc extends Bloc<BrowserEvent, BrowserState> {
       return t;
     }).toList();
     emit(state.copyWith(tabs: updatedTabs));
+    if (event.tabId == state.activeTabId) {
+      await _syncActiveBookmark(event.tabId, emit);
+    }
   }
 
   void _onProgressChanged(
