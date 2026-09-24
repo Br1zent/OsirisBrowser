@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/entities/browser_tab.dart';
+import '../../../domain/entities/privacy_settings.dart';
 import '../../bloc/browser/browser_bloc.dart';
 import '../../bloc/privacy/privacy_bloc.dart';
 import '../../widgets/glass_card.dart';
@@ -40,6 +41,7 @@ class _BrowserScreenState extends State<BrowserScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   // Controller per tab id
   final Map<String, InAppWebViewController> _controllers = {};
+  Future<void> _privacyScriptUpdate = Future<void>.value();
   // Display state per tab id
   final Map<String, _TabDisplay> _displays = {};
 
@@ -210,8 +212,7 @@ class _BrowserScreenState extends State<BrowserScreen>
     );
   }
 
-  UserScript _buildPrivacyUserScript() {
-    final settings = context.read<PrivacyBloc>().state.settings;
+  UserScript _buildPrivacyUserScript(PrivacySettings settings) {
     return AntiFingerprintJS.buildUserScript(
       blockCanvas: settings.blockCanvasFingerprint,
       blockAudio: settings.blockAudioFingerprint,
@@ -221,6 +222,20 @@ class _BrowserScreenState extends State<BrowserScreen>
       blockNavigatorProps: true,
       cookiesEnabled: settings.cookiesEnabled,
     );
+  }
+
+  Future<void> _queuePrivacyUserScriptUpdate(PrivacySettings settings) {
+    _privacyScriptUpdate = _privacyScriptUpdate.then((_) async {
+      for (final ctrl in _controllers.values.toList()) {
+        await ctrl.removeUserScriptsByGroupName(
+          groupName: 'osiris-privacy',
+        );
+        await ctrl.addUserScript(
+          userScript: _buildPrivacyUserScript(settings),
+        );
+      }
+    });
+    return _privacyScriptUpdate;
   }
 
   bool _isTrackerUrl(String url) {
@@ -240,9 +255,11 @@ class _BrowserScreenState extends State<BrowserScreen>
   @override
   Widget build(BuildContext context) {
     return BlocListener<PrivacyBloc, PrivacyState>(
-      listenWhen: (prev, curr) =>
-          prev.settings.autoClearInterval != curr.settings.autoClearInterval,
-      listener: (context, _) => _restartAutoClearTimer(),
+      listenWhen: (prev, curr) => prev.settings != curr.settings,
+      listener: (context, state) async {
+        _restartAutoClearTimer();
+        await _queuePrivacyUserScriptUpdate(state.settings);
+      },
       child: BlocConsumer<BrowserBloc, BrowserState>(
       listenWhen: (prev, curr) =>
           prev.activeTabId != curr.activeTabId ||
@@ -283,6 +300,9 @@ class _BrowserScreenState extends State<BrowserScreen>
         }
       },
       builder: (context, state) {
+        final privacySettings = context.select<PrivacyBloc, PrivacySettings>(
+          (bloc) => bloc.state.settings,
+        );
         _prevActiveTabId = state.activeTabId;
 
         for (final tab in state.tabs) {
@@ -312,7 +332,11 @@ class _BrowserScreenState extends State<BrowserScreen>
                               child: IndexedStack(
                                 index: activeIdx,
                                 children: state.tabs
-                                    .map((tab) => _buildWebView(tab, state))
+                                    .map((tab) => _buildWebView(
+                                          tab,
+                                          state,
+                                          privacySettings,
+                                        ))
                                     .toList(),
                               ),
                             ),
@@ -369,14 +393,18 @@ class _BrowserScreenState extends State<BrowserScreen>
 
   // ── WebView per tab ───────────────────────────────────────────────────────────
 
-  Widget _buildWebView(BrowserTab tab, BrowserState state) {
+  Widget _buildWebView(
+    BrowserTab tab,
+    BrowserState state,
+    PrivacySettings privacySettings,
+  ) {
     return InAppWebView(
           key: ValueKey(tab.id),
           initialUrlRequest:
               URLRequest(url: WebUri(tab.url.isEmpty ? 'https://duckduckgo.com' : tab.url)),
           initialSettings: _buildSettings(),
           initialUserScripts: UnmodifiableListView<UserScript>([
-            _buildPrivacyUserScript(),
+            _buildPrivacyUserScript(privacySettings),
           ]),
           onWebViewCreated: (ctrl) {
             _controllers[tab.id] = ctrl;

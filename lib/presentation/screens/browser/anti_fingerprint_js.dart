@@ -71,6 +71,7 @@ class AntiFingerprintJS {
     }
 
     return UserScript(
+      groupName: 'osiris-privacy',
       source: source.toString(),
       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
       forMainFrameOnly: false,

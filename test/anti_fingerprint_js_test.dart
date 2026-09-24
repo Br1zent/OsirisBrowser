@@ -9,6 +9,7 @@ void main() {
 
       expect(script.injectionTime, UserScriptInjectionTime.AT_DOCUMENT_START);
       expect(script.forMainFrameOnly, isFalse);
+      expect(script.groupName, 'osiris-privacy');
     });
 
     test('includes cookie blocking only when cookies are disabled', () {
