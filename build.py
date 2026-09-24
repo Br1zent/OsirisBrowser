@@ -10,7 +10,6 @@ import shutil
 import json
 import glob
 import platform
-import getpass
 
 IS_WIN  = platform.system() == "Windows"
 IS_MAC  = platform.system() == "Darwin"
@@ -18,7 +17,6 @@ PROJECT = os.path.dirname(os.path.abspath(__file__))
 SEP     = ";" if IS_WIN else ":"
 
 PATHS_CFG    = os.path.join(PROJECT, ".build_config.json")
-KEYSTORE_CFG = os.path.join(PROJECT, ".keystore_config.json")
 
 # ── Автодетект ────────────────────────────────────────────────────────────────
 def _detect_flutter():
@@ -158,14 +156,6 @@ def G(t): return f"\033[92m✓\033[0m {t}"
 def R(t): return f"\033[91m✗\033[0m {t}"
 def Y(t): return f"\033[93m!\033[0m {t}"
 
-def load_ks_cfg():
-    if os.path.exists(KEYSTORE_CFG):
-        with open(KEYSTORE_CFG) as f: return json.load(f)
-    return {}
-
-def save_ks_cfg(cfg):
-    with open(KEYSTORE_CFG, "w") as f: json.dump(cfg, f, indent=2)
-
 def pause(): input("\nНажми Enter для возврата...")
 
 # ── Настройка путей ───────────────────────────────────────────────────────────
@@ -263,9 +253,8 @@ def status():
     ndk = p.get("android_ndk", "")
     if ndk:
         print(f"  {G('NDK: ' + os.path.basename(ndk)) if os.path.exists(ndk) else Y('NDK: не найден')}")
-    ks_cfg = load_ks_cfg()
-    ks = ks_cfg.get("keystore_path", "")
-    print(f"  {G('keystore: ' + ks) if (ks and os.path.exists(ks)) else Y('keystore: не настроен')}")
+    ks = os.environ.get("ANDROID_KEYSTORE_PATH", "")
+    print(f"  {G('keystore configured') if (ks and os.path.isfile(ks)) else Y('release keystore: not configured in environment')}")
     apk = os.path.join(PROJECT, "build/app/outputs/flutter-apk/app-release.apk")
     if os.path.exists(apk):
         print(f"  {G(f'APK: {os.path.getsize(apk)//1024//1024} MB')}")
@@ -320,10 +309,26 @@ def status():
 def build_android():
     mode = input("Mode [release/debug] (default: release): ").strip() or "release"
     fmt  = input("Format [apk/appbundle] (default: apk): ").strip() or "apk"
+    if mode == "release":
+        try:
+            validate_android_release_signing()
+        except ValueError as error:
+            print(R(str(error)))
+            return
     run([paths()["flutter"], "build", fmt, f"--{mode}"])
     out = os.path.join(PROJECT, "build/app/outputs/flutter-apk/") if fmt == "apk" \
           else os.path.join(PROJECT, "build/app/outputs/bundle/")
     print(f"\nOutput: {out}")
+
+def validate_android_release_signing(environ=None):
+    values = os.environ if environ is None else environ
+    required = ("ANDROID_KEYSTORE_PATH", "ANDROID_KEY_ALIAS",
+                "ANDROID_STORE_PASSWORD", "ANDROID_KEY_PASSWORD")
+    missing = [name for name in required if not values.get(name)]
+    if missing:
+        raise ValueError("Release signing requires external environment variables: " + ", ".join(missing))
+    if not os.path.isfile(values["ANDROID_KEYSTORE_PATH"]):
+        raise ValueError("ANDROID_KEYSTORE_PATH must point to an existing keystore file")
 
 def build_ios():
     if not IS_MAC:
@@ -381,135 +386,15 @@ def build_linux():
 
 # ── Подписи ───────────────────────────────────────────────────────────────────
 def sign_menu():
-    while True:
-        cfg   = load_ks_cfg()
-        ks    = cfg.get("keystore_path", "не задан")
-        alias = cfg.get("key_alias",     "не задан")
-        short = (ks[:28] + "…") if len(ks) > 29 else ks
-
-        print("\n╔══════════════════════════════════════════════╗")
-        print("║         ПОДПИСИ И СЕРТИФИКАТЫ               ║")
-        print("╠══════════════════════════════════════════════╣")
-        print(f"║  Keystore: {short:<34}║")
-        print(f"║  Алиас:    {alias:<34}║")
-        print("╠══════════════════════════════════════════════╣")
-        print("║  1. Сгенерировать новый Android keystore    ║")
-        print("║  2. Указать существующий keystore           ║")
-        print("║  3. Применить подпись в build.gradle        ║")
-        print("║  4. Инфо о текущем keystore                 ║")
-        print("║  5. iOS: инструкция по подписи              ║")
-        print("║  0. Назад                                   ║")
-        print("╚══════════════════════════════════════════════╝")
-
-        c = input("Выбор: ").strip()
-        if c == "0":  break
-        elif c == "1": generate_keystore()
-        elif c == "2": select_keystore()
-        elif c == "3": apply_to_gradle()
-        elif c == "4": show_keystore_info()
-        elif c == "5": ios_signing_info()
-
-def _keytool():
-    jh = paths().get("java_home", "")
-    kt = os.path.join(jh, "bin", "keytool" + (".exe" if IS_WIN else "")) if jh else ""
-    return kt if os.path.exists(kt) else "keytool"
-
-def generate_keystore():
-    print("\n── Генерация Android Keystore ──")
-    default = os.path.join(PROJECT, "android", "app", "key.jks")
-    path    = input(f"Путь [{default}]: ").strip() or default
-    alias   = input("Key alias [key]: ").strip() or "key"
-    days    = input("Срок действия (дней) [10000]: ").strip() or "10000"
-    dname   = input("DN [CN=Osiris, O=BrizProject, C=RU]: ").strip() or "CN=Osiris, O=BrizProject, C=RU"
-    store_pass = getpass.getpass("Store password (мин. 6 симв.): ")
-    if len(store_pass) < 6:
-        print(R("Пароль слишком короткий")); return
-    key_pass = getpass.getpass("Key password (Enter = тот же): ") or store_pass
-    cmd = [_keytool(), "-genkey", "-v",
-           "-keystore", path, "-alias", alias,
-           "-keyalg", "RSA", "-keysize", "2048",
-           "-validity", days, "-dname", dname,
-           "-storepass", store_pass, "-keypass", key_pass]
-    result = subprocess.run(cmd, env=env())
-    if result.returncode == 0:
-        cfg = load_ks_cfg()
-        cfg.update({"keystore_path": path, "key_alias": alias,
-                    "store_password": store_pass, "key_password": key_pass})
-        save_ks_cfg(cfg)
-        print(f"\n{G('Keystore создан: ' + path)}")
-        print(Y("Не добавляй key.jks в git! (уже в .gitignore)"))
-    else:
-        print(R("Ошибка генерации"))
-
-def select_keystore():
-    print("\n── Указать существующий keystore ──")
-    path = input("Путь к .jks/.keystore: ").strip()
-    if not os.path.exists(path):
-        print(R(f"Файл не найден: {path}")); return
-    alias      = input("Key alias: ").strip()
-    store_pass = getpass.getpass("Store password: ")
-    key_pass   = getpass.getpass("Key password (Enter = тот же): ") or store_pass
-    cfg = load_ks_cfg()
-    cfg.update({"keystore_path": path, "key_alias": alias,
-                "store_password": store_pass, "key_password": key_pass})
-    save_ks_cfg(cfg)
-    print(G("Keystore сохранён"))
-
-def apply_to_gradle():
-    cfg = load_ks_cfg()
-    if not cfg.get("keystore_path"):
-        print(R("Сначала настрой keystore (пункт 1 или 2)")); return
-    gradle = os.path.join(PROJECT, "android", "app", "build.gradle")
-    with open(gradle) as f: content = f.read()
-    if "signingConfigs" in content and "release {" in content.split("signingConfigs")[1][:100]:
-        print(Y("signingConfigs уже настроен в build.gradle")); return
-    ks_path = cfg["keystore_path"].replace("\\", "/")
-    signing = f"""
-    signingConfigs {{
-        release {{
-            keyAlias '{cfg["key_alias"]}'
-            keyPassword '{cfg["key_password"]}'
-            storeFile file('{ks_path}')
-            storePassword '{cfg["store_password"]}'
-        }}
-    }}
-"""
-    content = content.replace("    buildTypes {", signing + "    buildTypes {")
-    content = content.replace(
-        "        release {\n            signingConfig signingConfigs.debug",
-        "        release {\n            signingConfig signingConfigs.release"
-    )
-    with open(gradle, "w") as f: f.write(content)
-    print(G("build.gradle обновлён с release-подписью"))
-    print(Y("Не коммить build.gradle с паролями в открытом виде!"))
-
-def show_keystore_info():
-    cfg = load_ks_cfg()
-    ks  = cfg.get("keystore_path", "")
-    if not ks or not os.path.exists(ks):
-        print(R("Keystore не задан или файл не найден")); return
-    sp = cfg.get("store_password") or getpass.getpass("Store password: ")
-    subprocess.run([_keytool(), "-list", "-v", "-keystore", ks, "-storepass", sp], env=env())
-    pause()
-
-def ios_signing_info():
     print("""
-╔══════════════════════════════════════════════╗
-║         iOS ПОДПИСЬ                         ║
-╠══════════════════════════════════════════════╣
-║ Тест на своём устройстве (бесплатно):        ║
-║  1. Открой ios/Runner.xcworkspace в Xcode   ║
-║  2. Runner → Signing & Capabilities         ║
-║  3. Team: выбери Apple ID                   ║
-║     Бесплатный: 7 дней / Платный: год       ║
-║                                              ║
-║ App Store (платный аккаунт $99/год):         ║
-║  1. Сертификат на developer.apple.com       ║
-║  2. Xcode → Product → Archive               ║
-║  3. Distribute через Organizer              ║
-║                                              ║
-║ Bundle ID: com.brizproject.osiris           ║
-╚══════════════════════════════════════════════╝
+Android release signing is configured outside the repository. Set these environment
+variables in a protected CI secret store or local secret manager before building:
+  ANDROID_KEYSTORE_PATH, ANDROID_KEY_ALIAS,
+  ANDROID_STORE_PASSWORD, ANDROID_KEY_PASSWORD
+
+This tool does not collect, save, print, or pass signing passwords as arguments.
+The published signing credentials must be rotated by the key owner; do not reuse
+credentials previously committed to the repository.
 """)
     pause()
 
