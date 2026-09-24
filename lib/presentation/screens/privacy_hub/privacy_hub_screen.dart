@@ -789,7 +789,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
         children: [
           _buildSectionHeader('Auto-Clean', Icons.cleaning_services_rounded),
           _buildToggleRow(
-            title: 'Clear on Exit',
+            title: str.clearOnExitTitle,
             subtitle: str.clearOnExitDesc,
             value: s.clearOnExit,
             onChanged: (v) =>
