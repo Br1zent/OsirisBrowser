@@ -734,7 +734,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
           _buildToggleRow(
-            title: 'Cookies',
+            title: str.cookiesTitle,
             subtitle: str.cookiesDesc,
             value: s.cookiesEnabled,
             onChanged: (v) =>
