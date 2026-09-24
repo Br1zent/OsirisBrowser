@@ -21,7 +21,7 @@ void main() {
 
     await migrateLegacyVaultFile(
       file: file,
-      storeIfAbsent: (key, value) async => stored[key] = value,
+      storeIfAbsent: (key, value) async { stored[key] = value; },
     );
 
     expect(stored, {'password': 'hash', 'salt': 'salt-value'});
