@@ -658,7 +658,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             subtitle: str.canvasDesc,
             value: s.blockCanvasFingerprint,
             onChanged: (v) => _updateSettings(
-                context, s.copyWith(blockCanvasFingerprint: v)),
+                context, 'blockCanvasFingerprint', v),
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
           _buildToggleRow(
@@ -666,7 +666,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             subtitle: str.audioDesc,
             value: s.blockAudioFingerprint,
             onChanged: (v) => _updateSettings(
-                context, s.copyWith(blockAudioFingerprint: v)),
+                context, 'blockAudioFingerprint', v),
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
           _buildToggleRow(
@@ -674,7 +674,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             subtitle: str.webglDesc,
             value: s.blockWebGLFingerprint,
             onChanged: (v) => _updateSettings(
-                context, s.copyWith(blockWebGLFingerprint: v)),
+                context, 'blockWebGLFingerprint', v),
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
           _buildToggleRow(
@@ -682,7 +682,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             subtitle: str.timezoneDesc,
             value: s.spoofTimezone,
             onChanged: (v) =>
-                _updateSettings(context, s.copyWith(spoofTimezone: v)),
+                _updateSettings(context, 'spoofTimezone', v),
           ),
         ],
       ),
@@ -706,7 +706,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             subtitle: str.webrtcDesc,
             value: s.blockWebRtc,
             onChanged: (v) =>
-                _updateSettings(context, s.copyWith(blockWebRtc: v)),
+                _updateSettings(context, 'blockWebRtc', v),
           ),
         ],
       ),
@@ -730,7 +730,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             subtitle: str.javascriptDesc,
             value: s.javascriptEnabled,
             onChanged: (v) =>
-                _updateSettings(context, s.copyWith(javascriptEnabled: v)),
+                _updateSettings(context, 'javascriptEnabled', v),
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
           _buildToggleRow(
@@ -738,7 +738,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             subtitle: str.cookiesDesc,
             value: s.cookiesEnabled,
             onChanged: (v) =>
-                _updateSettings(context, s.copyWith(cookiesEnabled: v)),
+                _updateSettings(context, 'cookiesEnabled', v),
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
           _buildToggleRow(
@@ -746,7 +746,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             subtitle: str.thirdPartyCookiesDesc,
             value: s.blockThirdPartyCookies,
             onChanged: (v) => _updateSettings(
-                context, s.copyWith(blockThirdPartyCookies: v)),
+                context, 'blockThirdPartyCookies', v),
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
           _buildToggleRow(
@@ -754,7 +754,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             subtitle: str.historyDesc,
             value: s.saveHistory,
             onChanged: (v) =>
-                _updateSettings(context, s.copyWith(saveHistory: v)),
+                _updateSettings(context, 'saveHistory', v),
           ),
           const SizedBox(height: 12),
           Text(
@@ -767,7 +767,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             items: AppConstants.searchEngines.keys.toList(),
             onChanged: (v) {
               if (v != null) {
-                _updateSettings(context, s.copyWith(searchEngine: v));
+                _updateSettings(context, 'searchEngine', v);
               }
             },
           ),
@@ -793,7 +793,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             subtitle: str.clearOnExitDesc,
             value: s.clearOnExit,
             onChanged: (v) =>
-                _updateSettings(context, s.copyWith(clearOnExit: v)),
+                _updateSettings(context, 'clearOnExit', v),
           ),
           const Divider(height: 16, color: AppColors.anthraciteLight),
           Text(
@@ -821,7 +821,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
               if (v != null) {
                 final interval = AppConstants.autoClearIntervals[v] ?? 0;
                 _updateSettings(
-                    context, s.copyWith(autoClearInterval: interval));
+                    context, 'autoClearInterval', interval);
               }
             },
           ),
@@ -860,7 +860,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
             items: AppConstants.userAgents.keys.toList(),
             onChanged: (v) {
               if (v != null) {
-                _updateSettings(context, s.copyWith(userAgent: v));
+                _updateSettings(context, 'userAgent', v);
               }
             },
           ),
@@ -1015,10 +1015,8 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
 
   // ─── Helpers ────────────────────────────────────────────────────────────
 
-  void _updateSettings(BuildContext context, PrivacySettings newSettings) {
-    context
-        .read<PrivacyBloc>()
-        .add(PrivacyUpdateSettings(newSettings));
+  void _updateSettings(BuildContext context, String key, Object value) {
+    context.read<PrivacyBloc>().add(PrivacyUpdateSettings(key, value));
   }
 
   void _showConfirmDialog(

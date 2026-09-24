@@ -12,6 +12,7 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
   final PrivacySettingsRepository settingsRepository;
   final HistoryRepository historyRepository;
   final BookmarkRepository bookmarkRepository;
+  Future<void> _settingsUpdateQueue = Future<void>.value();
 
   PrivacyBloc({
     required this.settingsRepository,
@@ -44,17 +45,62 @@ class PrivacyBloc extends Bloc<PrivacyEvent, PrivacyState> {
 
   Future<void> _onUpdateSettings(
       PrivacyUpdateSettings event, Emitter<PrivacyState> emit) async {
-    try {
-      await settingsRepository.saveSettings(event.settings);
-      emit(state.copyWith(
-        status: PrivacyStatus.loaded,
-        settings: event.settings,
-      ));
-    } catch (e) {
-      emit(state.copyWith(
-        status: PrivacyStatus.error,
-        message: 'Failed to save settings',
-      ));
+    final update = _settingsUpdateQueue.then((_) async {
+      try {
+        final settings = _applySetting(state.settings, event.key, event.value);
+        await settingsRepository.saveSettings(settings);
+        emit(state.copyWith(
+          status: PrivacyStatus.loaded,
+          settings: settings,
+        ));
+      } catch (e) {
+        emit(state.copyWith(
+          status: PrivacyStatus.error,
+          message: 'Failed to save settings',
+        ));
+      }
+    });
+    _settingsUpdateQueue = update;
+    await update;
+  }
+
+  PrivacySettings _applySetting(
+      PrivacySettings settings, String key, Object value) {
+    switch (key) {
+      case 'blockWebRtc':
+        return settings.copyWith(blockWebRtc: value as bool);
+      case 'blockCanvasFingerprint':
+        return settings.copyWith(blockCanvasFingerprint: value as bool);
+      case 'blockAudioFingerprint':
+        return settings.copyWith(blockAudioFingerprint: value as bool);
+      case 'blockWebGLFingerprint':
+        return settings.copyWith(blockWebGLFingerprint: value as bool);
+      case 'spoofTimezone':
+        return settings.copyWith(spoofTimezone: value as bool);
+      case 'javascriptEnabled':
+        return settings.copyWith(javascriptEnabled: value as bool);
+      case 'cookiesEnabled':
+        return settings.copyWith(cookiesEnabled: value as bool);
+      case 'blockThirdPartyCookies':
+        return settings.copyWith(blockThirdPartyCookies: value as bool);
+      case 'dohEnabled':
+        return settings.copyWith(dohEnabled: value as bool);
+      case 'dohProvider':
+        return settings.copyWith(dohProvider: value as String);
+      case 'userAgent':
+        return settings.copyWith(userAgent: value as String);
+      case 'searchEngine':
+        return settings.copyWith(searchEngine: value as String);
+      case 'autoClearInterval':
+        return settings.copyWith(autoClearInterval: value as int);
+      case 'clearOnExit':
+        return settings.copyWith(clearOnExit: value as bool);
+      case 'saveHistory':
+        return settings.copyWith(saveHistory: value as bool);
+      case 'adBlockEnabled':
+        return settings.copyWith(adBlockEnabled: value as bool);
+      default:
+        throw ArgumentError.value(key, 'key', 'Unknown privacy setting');
     }
   }
 

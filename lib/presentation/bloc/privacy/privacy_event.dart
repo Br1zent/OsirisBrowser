@@ -12,11 +12,12 @@ class PrivacyLoadSettings extends PrivacyEvent {
 }
 
 class PrivacyUpdateSettings extends PrivacyEvent {
-  final PrivacySettings settings;
-  const PrivacyUpdateSettings(this.settings);
+  final String key;
+  final Object value;
+  const PrivacyUpdateSettings(this.key, this.value);
 
   @override
-  List<Object?> get props => [settings];
+  List<Object?> get props => [key, value];
 }
 
 class PrivacyNukeAllData extends PrivacyEvent {
