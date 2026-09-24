@@ -99,8 +99,11 @@ class AppStrings {
                                        : 'Allow cookies to be saved';
   String get historyDesc        => _ru ? 'Сохранять историю посещений'
                                        : 'Save browsing history';
-  String get clearOnExitDesc    => _ru ? 'Удалять все данные при закрытии'
-                                       : 'Delete all data when closing';
+  String get clearOnExitTitle   => _ru ? 'Очистка при сворачивании'
+                                       : 'Clear on Background';
+  String get clearOnExitDesc    => _ru
+      ? 'Начинать очистку истории, cookies и данных сайтов при сворачивании приложения'
+      : 'Start clearing history, cookies, and site data when the app goes to background';
 
   // ── Home screen extra ───────────────────────────────────────────────────────
   String get closeAll        => _ru ? 'Закрыть все'        : 'Close All';
