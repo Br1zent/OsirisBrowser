@@ -1,14 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:local_auth/local_auth.dart';
 import '../../../core/security/master_password_service.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final LocalAuthentication _localAuth = LocalAuthentication();
-
   AuthBloc() : super(const AuthState()) {
     on<AuthCheckStatus>(_onCheckStatus);
     on<AuthSetupPassword>(_onSetupPassword);
@@ -113,40 +110,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onBiometricLogin(
       AuthBiometricLogin event, Emitter<AuthState> emit) async {
-    try {
-      final authenticated = await _localAuth.authenticate(
-        localizedReason: 'Authenticate to access Osiris Browser',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
-      );
-
-      if (authenticated) {
-        emit(state.copyWith(status: AuthStatus.authenticated));
-      } else {
-        emit(state.copyWith(
-          status: AuthStatus.locked,
-          errorMessage: 'Biometric authentication cancelled',
-        ));
-      }
-    } catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.locked,
-        errorMessage: 'Biometric authentication failed',
-      ));
-    }
+    // A successful OS prompt does not recover the master password or the
+    // encryption key. Do not grant app access until a protected key-unlock
+    // flow exists.
+    emit(state.copyWith(
+      status: AuthStatus.locked,
+      biometricAvailable: false,
+      errorMessage: 'Biometric unlock is unavailable; enter your master password',
+    ));
   }
 
   Future<bool> _checkBiometricAvailability() async {
-    try {
-      final canCheck = await _localAuth.canCheckBiometrics;
-      final isDeviceSupported = await _localAuth.isDeviceSupported();
-      final biometricEnabled =
-          await MasterPasswordService.instance.isBiometricEnabled();
-      return canCheck && isDeviceSupported && biometricEnabled;
-    } catch (_) {
-      return false;
-    }
+    // Biometrics cannot unlock EncryptionService's in-memory master key yet.
+    return false;
   }
 }
