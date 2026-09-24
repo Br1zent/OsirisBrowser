@@ -69,9 +69,8 @@ class _HomeScreenState extends State<HomeScreen>
     if (isUrl) {
       url = query.startsWith('http') ? query : 'https://$query';
     } else {
-      final engine =
-          AppConstants.searchEngines['DuckDuckGo']!;
-      url = '$engine${Uri.encodeComponent(query)}';
+      final engine = context.read<PrivacyBloc>().state.settings.searchEngine;
+      url = AppConstants.searchUrl(engine, query);
     }
 
     _searchController.clear();

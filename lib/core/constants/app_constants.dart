@@ -85,6 +85,11 @@ class AppConstants {
     'Ecosia': 'https://www.ecosia.org/search?q=',
   };
 
+  static String searchUrl(String engine, String query) {
+    final baseUrl = searchEngines[engine] ?? searchEngines['DuckDuckGo']!;
+    return '$baseUrl${Uri.encodeComponent(query)}';
+  }
+
   // SharedPreferences Keys
   static const String prefUserAgent = 'pref_user_agent';
   static const String prefSearchEngine = 'pref_search_engine';
