@@ -6,4 +6,13 @@
             <certificates src="system"/>
         </trust-anchors>
     </base-config>
+
+    <!-- Keep configured DNS-over-HTTPS providers HTTPS-only. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">cloudflare-dns.com</domain>
+        <domain includeSubdomains="true">dns.google</domain>
+        <domain includeSubdomains="true">dns.quad9.net</domain>
+        <domain includeSubdomains="true">dns.nextdns.io</domain>
+        <domain includeSubdomains="true">dns.adguard.com</domain>
+    </domain-config>
 </network-security-config>
