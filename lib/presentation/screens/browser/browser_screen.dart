@@ -14,6 +14,7 @@ import '../../widgets/glass_card.dart';
 import '../../widgets/osiris_logo.dart';
 import '../../widgets/tab_card_switcher.dart';
 import 'anti_fingerprint_js.dart';
+import 'browser_session_controller.dart';
 
 // Per-tab runtime display state (URL bar, loading, navigation)
 class _TabDisplay {
@@ -39,6 +40,7 @@ class _BrowserScreenState extends State<BrowserScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   // Controller per tab id
   final Map<String, InAppWebViewController> _controllers = {};
+  bool _webViewsClosed = false;
   // Display state per tab id
   final Map<String, _TabDisplay> _displays = {};
 
@@ -62,6 +64,7 @@ class _BrowserScreenState extends State<BrowserScreen>
   @override
   void initState() {
     super.initState();
+    BrowserSessionController.instance.register(_closeAllWebViews);
     WidgetsBinding.instance.addObserver(this);
     _controlsController = AnimationController(
       vsync: this,
@@ -92,12 +95,32 @@ class _BrowserScreenState extends State<BrowserScreen>
 
   @override
   void dispose() {
+    BrowserSessionController.instance.unregister(_closeAllWebViews);
     WidgetsBinding.instance.removeObserver(this);
     _autoClearTimer?.cancel();
     _controlsController.dispose();
     _moreMenuController.dispose();
     _urlController.dispose();
     super.dispose();
+  }
+
+  Future<void> _closeAllWebViews() async {
+    Object? error;
+    StackTrace? stack;
+    for (final controller in _controllers.values.toList()) {
+      try {
+        await controller.stopLoading();
+      } catch (e, s) {
+        error ??= e;
+        stack ??= s;
+      }
+    }
+    if (mounted && !_webViewsClosed) {
+      setState(() => _webViewsClosed = true);
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    _controllers.clear();
+    if (error != null) Error.throwWithStackTrace(error, stack!);
   }
 
   @override
@@ -319,7 +342,7 @@ class _BrowserScreenState extends State<BrowserScreen>
                     _buildTopBar(state, display),
                     _buildProgressBar(display),
                     Expanded(
-                      child: state.tabs.isEmpty
+                      child: _webViewsClosed || state.tabs.isEmpty
                           ? const SizedBox()
                           : RepaintBoundary(
                               child: IndexedStack(

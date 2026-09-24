@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/security/master_password_service.dart';
 import '../../bloc/auth/auth_bloc.dart';
+import '../../bloc/privacy/privacy_bloc.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/osiris_logo.dart';
 import '../../widgets/password_input.dart';
@@ -144,7 +145,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
 
     if (confirmed == true && mounted) {
-      await MasterPasswordService.instance.deleteAllCredentials();
+      final report = await context.read<PrivacyBloc>().resetApp();
+      if (!report.succeeded) {
+        setState(() => _passwordError =
+            'Reset incomplete. Retry required (${report.failedComponents.join(', ')}).');
+        return;
+      }
       setState(() {
         _mode = WelcomeMode.setup;
         _passwordController.clear();

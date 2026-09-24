@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/security/encryption_service.dart';
 import '../../../domain/entities/privacy_settings.dart';
+import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/privacy/privacy_bloc.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/privacy_indicator.dart';
@@ -70,6 +71,10 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
                 Expanded(
                   child: BlocConsumer<PrivacyBloc, PrivacyState>(
                     listener: (context, state) {
+                      if (state.status == PrivacyStatus.error &&
+                          state.message?.startsWith('Wipe incomplete') == true) {
+                        context.read<AuthBloc>().add(const AuthCheckStatus());
+                      }
                       if (state.status == PrivacyStatus.nuked) {
                         final s = AppStrings.of(context);
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -90,6 +95,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
                                 borderRadius: BorderRadius.circular(10)),
                           ),
                         );
+                        context.read<AuthBloc>().add(const AuthLock());
                       }
                     },
                     builder: (context, state) {
@@ -366,7 +372,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
   }
 
   void _showNukeConfirmation(BuildContext context) {
-    bool clearBookmarks = false;
+    bool clearBookmarks = true;
     final s = AppStrings.of(context);
 
     showDialog(
