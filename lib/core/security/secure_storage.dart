@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'desktop_vault_migration.dart';
@@ -33,6 +34,9 @@ class SecureStorage {
     iOptions: _iosOptions,
     mOptions: _macOptions,
   );
+
+  bool get _usesDesktopStore =>
+      !kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux);
 
   Future<void> _operationQueue = Future<void>.value();
 
@@ -85,37 +89,48 @@ class SecureStorage {
     return result;
   }
 
-  Future<void> write({required String key, required String value}) =>
-      _run(() async {
-        await _migrateLegacyVault();
-        await _trackKey(key);
-        await _fss.write(key: key, value: value);
-      });
+  Future<void> write({required String key, required String value}) {
+    if (!_usesDesktopStore) return _fss.write(key: key, value: value);
+    return _run(() async {
+      await _migrateLegacyVault();
+      await _trackKey(key);
+      await _fss.write(key: key, value: value);
+    });
+  }
 
-  Future<String?> read({required String key}) => _run(() async {
-        await _migrateLegacyVault();
-        return _fss.read(key: key);
-      });
+  Future<String?> read({required String key}) {
+    if (!_usesDesktopStore) return _fss.read(key: key);
+    return _run(() async {
+      await _migrateLegacyVault();
+      return _fss.read(key: key);
+    });
+  }
 
-  Future<void> delete({required String key}) => _run(() async {
-        await _migrateLegacyVault();
-        await _fss.delete(key: key);
-        await _untrackKey(key);
-      });
+  Future<void> delete({required String key}) {
+    if (!_usesDesktopStore) return _fss.delete(key: key);
+    return _run(() async {
+      await _migrateLegacyVault();
+      await _fss.delete(key: key);
+      await _untrackKey(key);
+    });
+  }
 
-  Future<void> deleteAll() => _run(() async {
-        // Destructive reset should still work if legacy data is malformed.
-        final file = await _vaultFile();
-        if (await file.exists()) await file.delete();
+  Future<void> deleteAll() {
+    if (!_usesDesktopStore) return _fss.deleteAll();
+    return _run(() async {
+      // Destructive reset should still work if legacy data is malformed.
+      final file = await _vaultFile();
+      if (await file.exists()) await file.delete();
 
-        if (Platform.isWindows) {
-          // flutter_secure_storage 9.2.4 does not implement Windows deleteAll.
-          for (final key in await _readKeyIndex()) {
-            await _fss.delete(key: key);
-          }
-          await _fss.delete(key: _keyIndex);
-        } else {
-          await _fss.deleteAll();
+      if (Platform.isWindows) {
+        // flutter_secure_storage 9.2.4 does not implement Windows deleteAll.
+        for (final key in await _readKeyIndex()) {
+          await _fss.delete(key: key);
         }
-      });
+        await _fss.delete(key: _keyIndex);
+      } else {
+        await _fss.deleteAll();
+      }
+    });
+  }
 }
