@@ -12,26 +12,13 @@ class EncryptionService {
   static EncryptionService get instance => _instance;
 
   Uint8List? _derivedKey;
+  static const _passwordHashPrefix = 'pbkdf2-sha256-v1:';
 
   bool get isInitialized => _derivedKey != null;
 
   /// Derives a 256-bit AES key from the master password using PBKDF2-SHA256
   Future<Uint8List> deriveKey(String password, Uint8List salt) async {
-    final passwordBytes = utf8.encode(password);
-
-    final params = Pbkdf2Parameters(
-      salt,
-      AppConstants.pbkdf2Iterations,
-      AppConstants.keyLength,
-    );
-
-    final pbkdf2 = PBKDF2KeyDerivator(HMac(SHA256Digest(), 64))
-      ..init(params);
-
-    final keyBytes = Uint8List(AppConstants.keyLength);
-    pbkdf2.deriveKey(Uint8List.fromList(passwordBytes), 0, keyBytes, 0);
-
-    return keyBytes;
+    return _derivePbkdf2(password, salt, AppConstants.pbkdf2Iterations);
   }
 
   /// Generate a cryptographically secure random salt
@@ -129,8 +116,23 @@ class EncryptionService {
 
   /// Verify a password against a stored hash
   bool verifyPassword(String password, Uint8List salt, String storedHash) {
-    final verifyHash = _computePasswordHash(password, salt);
-    return verifyHash == storedHash;
+    if (storedHash.startsWith(_passwordHashPrefix)) {
+      final encoded = storedHash.substring(_passwordHashPrefix.length);
+      try {
+        return _constantTimeEquals(
+          _derivePbkdf2(password, salt, AppConstants.pbkdf2Iterations),
+          base64.decode(encoded),
+        );
+      } on FormatException {
+        return false;
+      }
+    }
+
+    // Compatibility with the original 10,000-round SHA-256 verifier.
+    return _constantTimeEquals(
+      Uint8List.fromList(utf8.encode(_computeLegacyPasswordHash(password, salt))),
+      Uint8List.fromList(utf8.encode(storedHash)),
+    );
   }
 
   /// Compute password hash for storage
@@ -139,6 +141,10 @@ class EncryptionService {
   }
 
   String _computePasswordHash(String password, Uint8List salt) {
+    return '$_passwordHashPrefix${base64.encode(_derivePbkdf2(password, salt, AppConstants.pbkdf2Iterations))}';
+  }
+
+  String _computeLegacyPasswordHash(String password, Uint8List salt) {
     final passwordBytes = Uint8List.fromList(utf8.encode(password));
     final saltedPassword = Uint8List(passwordBytes.length + salt.length);
     saltedPassword.setRange(0, passwordBytes.length, passwordBytes);
@@ -155,6 +161,25 @@ class EncryptionService {
       current = result;
     }
     return base64.encode(current);
+  }
+
+  Uint8List _derivePbkdf2(String password, Uint8List salt, int iterations) {
+    final params = Pbkdf2Parameters(salt, iterations, AppConstants.keyLength);
+    final pbkdf2 = PBKDF2KeyDerivator(HMac(SHA256Digest(), 64))..init(params);
+    final output = Uint8List(AppConstants.keyLength);
+    final passwordBytes = Uint8List.fromList(utf8.encode(password));
+    pbkdf2.deriveKey(passwordBytes, 0, output, 0);
+    passwordBytes.fillRange(0, passwordBytes.length, 0);
+    return output;
+  }
+
+  bool _constantTimeEquals(Uint8List a, Uint8List b) {
+    var difference = a.length ^ b.length;
+    final length = a.length > b.length ? a.length : b.length;
+    for (var i = 0; i < length; i++) {
+      difference |= (i < a.length ? a[i] : 0) ^ (i < b.length ? b[i] : 0);
+    }
+    return difference == 0;
   }
 
   /// Generate a secure random database encryption key
