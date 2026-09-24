@@ -546,12 +546,12 @@ class _BrowserScreenState extends State<BrowserScreen>
                                 ),
                         ),
                         if (display.isLoading)
-                          const SizedBox(
+                          SizedBox(
                             width: 14,
                             height: 14,
                             child: CircularProgressIndicator(
                               strokeWidth: 1.5,
-                              color: AppColors.accent,
+                              color: accent,
                             ),
                           )
                         else if (_isEditingUrl)
@@ -613,10 +613,11 @@ class _BrowserScreenState extends State<BrowserScreen>
 
   Widget _buildProgressBar(_TabDisplay display) {
     if (!display.isLoading) return const SizedBox.shrink();
+    final accent = Theme.of(context).colorScheme.primary;
     return LinearProgressIndicator(
       value: display.progress,
       backgroundColor: Colors.transparent,
-      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+      valueColor: AlwaysStoppedAnimation<Color>(accent),
       minHeight: 2,
     );
   }

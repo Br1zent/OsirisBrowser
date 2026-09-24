@@ -586,11 +586,12 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
   // ─── Section builder helper ─────────────────────────────────────────────
 
   Widget _buildSectionHeader(String title, IconData icon) {
+    final accent = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.accent, size: 16),
+          Icon(icon, color: accent, size: 16),
           const SizedBox(width: 8),
           Text(
             title,
@@ -612,6 +613,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
     required ValueChanged<bool> onChanged,
     Color? activeColor,
   }) {
+    final accent = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
@@ -634,7 +636,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: activeColor ?? AppColors.accent,
+            activeColor: activeColor ?? accent,
           ),
         ],
       ),
@@ -835,6 +837,7 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
   Widget _buildUserAgentSection(BuildContext context, PrivacyState state) {
     final str = AppStrings.of(context);
     final s = state.settings;
+    final accent = Theme.of(context).colorScheme.primary;
     return GlassCard(
       padding: const EdgeInsets.all(16),
       borderRadius: 16,
@@ -868,14 +871,14 @@ class _PrivacyHubScreenState extends State<PrivacyHubScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.accentSoft,
+              color: AppColors.accentSoftOf(accent),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.accent.withOpacity(0.2)),
+              border: Border.all(color: accent.withOpacity(0.2)),
             ),
             child: Text(
               AppConstants.userAgents[s.userAgent] ?? '',
               style: TextStyle(
-                color: AppColors.accent.withOpacity(0.8),
+                color: accent.withOpacity(0.8),
                 fontSize: 10,
                 fontFamily: 'monospace',
               ),
